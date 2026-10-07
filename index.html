@@ -141,6 +141,24 @@ table.t .r{text-align:right}
 .totbox div span:last-child{white-space:nowrap;font-weight:700}
 .totbox .big{font-size:17px;font-weight:800;margin-top:4px}
 @media (prefers-reduced-motion:reduce){.toast,.switch span,.switch span::after{transition:none}}
+.isum{border-top:1px solid var(--line)}
+.isum summary{display:flex;align-items:center;gap:10px;padding:10px 0;min-height:44px;font-weight:700;cursor:pointer;list-style:none}
+.isum summary::-webkit-details-marker{display:none}
+.isum summary::before{content:"";flex:none;width:8px;height:8px;margin:0 4px 0 2px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+.isum[open] summary::before{transform:rotate(45deg)}
+.isum summary .nm{flex:1;min-width:0}
+.isum .list{margin:0 0 8px}
+.isum .list li{padding:8px 0}
+.isum .list a{color:var(--ink);font-weight:600}
+.isum .btn{margin:0 0 12px}
+.flabel{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 2px}
+@media (prefers-reduced-motion:reduce){.isum summary::before{transition:none}}
+.joinbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 12px;background:var(--soft)}
+.joinbox>label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.joinbox>label input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--pink)}
+.joinbox .jf{margin-top:10px}
+.joinbox .jf[hidden]{display:none}
+.joinbox label.f input{background:var(--surface)}
 .gate{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(20px + env(safe-area-inset-bottom,0px));overflow:auto}
 .gate[hidden]{display:none}
 .gatecard{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 20px;margin:auto}
@@ -339,6 +357,8 @@ async function syncNow(manual){
   }finally{ syncing = false; }
 }
 
+async function syncTick(manual){ const ok = await syncNow(manual); autoLapse(); return ok; }
+
 /* ---------- sign in ---------- */
 const gate = document.getElementById("gate");
 function gateMsg(t, ok){ const el=document.getElementById("gMsg"); el.textContent=t||""; el.classList.toggle("ok", !!ok); }
@@ -400,9 +420,9 @@ async function startSignedIn(user){
   /* records typed before sync existed count as not synced yet */
   if(had && !lsGet(LS_STAMP)) lsSet(LS_DIRTY,"1");
   hideGate(); render(); setSync("Syncing…");
-  await syncNow();
+  await syncTick();
   clearInterval(syncTimer);
-  syncTimer = setInterval(()=>{ if(!document.hidden) syncNow(); }, 45000);
+  syncTimer = setInterval(()=>{ if(!document.hidden) syncTick(); }, 45000);
 }
 function lockApp(){
   sbUser = null; clearInterval(syncTimer); clearTimeout(saveTimer); saveTimer = null; pendingSave = false;
@@ -439,14 +459,14 @@ async function init(){
   else if(authErr && lsGet(LS_OWNER) && !navigator.onLine){
     /* offline with a saved sign-in: open this device's copy, sync later */
     try{ const raw = localStorage.getItem(LS_KEY); if(raw) S = normalize(JSON.parse(raw)); }catch(e){}
-    render(); setSync("Offline. Saved on this device.");
+    render(); autoLapse(); setSync("Offline. Saved on this device.");
     window.addEventListener("online", ()=>location.reload(), {once:true});
   }
   else { render(); showGate(); }
-  window.addEventListener("online", ()=>syncNow());
+  window.addEventListener("online", ()=>syncTick());
   document.addEventListener("visibilitychange", ()=>{
     if(document.hidden){ if(saveTimer){ clearTimeout(saveTimer); flush(saveSeq); } }
-    else syncNow();
+    else syncTick();
   });
 }
 
@@ -469,6 +489,31 @@ const addMonths = (iso,n)=>{ if(!iso) return ""; const [y,mo,d]=iso.split("-").m
 const cardExpired = m => !!m.validUntil && m.validUntil < todayISO();
 const memLabel = m => (m.memberNo ? m.memberNo+" — " : "")+m.name;
 const fmtSize = b => b>=1048576 ? (b/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(b/1024))+" KB";
+
+/* ---------- membership moves ---------- */
+const wasMember = m => !!(m.lapsedOn || m.memberNo);
+function joinMembership(m, fee, from){
+  /* keep the fee of a finished term in the money history before starting a new term */
+  if(m.lapsedOn && +m.feePaid>0 && m.feeDate) (m.feeHistory = m.feeHistory||[]).push({amount:+m.feePaid, date:m.feeDate, validFrom:m.validFrom||"", validUntil:m.validUntil||""});
+  m.memType = wasMember(m) ? "renewal" : "new";
+  m.type = "member";
+  if(!m.memberNo) m.memberNo = nextMemberNo();
+  m.feePaid = +fee||0; m.feeDate = todayISO();
+  m.validFrom = from; m.validUntil = addMonths(from, MEMBER_MONTHS);
+  if(!m.startDate) m.startDate = todayISO();
+  m.remindedFor = ""; delete m.lapsedOn;
+}
+/* members past their valid-until date go back to non-members, with all their details */
+function autoLapse(){
+  if(dlg.open) return 0;
+  const gone = S.members.filter(m=>m.type==="member" && cardExpired(m));
+  if(!gone.length) return 0;
+  gone.forEach(m=>{ m.type = "nonmember"; m.lapsedOn = todayISO(); });
+  save(); render();
+  toast(gone.length===1 ? `${gone[0].name}'s membership expired. Moved to Non-members.` : `${gone.length} memberships expired. Moved to Non-members.`);
+  return gone.length;
+}
+const feeCounts = m => m.type==="member" || !!m.lapsedOn;
 
 /* ---------- renewal reminders (bell) ---------- */
 const remindDays = () => { const n=+S.settings.remindDays; return isFinite(n) && n>=0 ? n : 3; };
@@ -592,6 +637,7 @@ function memberStats(m){
   const spent = S.sessions.reduce((a,s)=>a+(s.attendees||[]).filter(x=>x.memberId===m.id).reduce((b,x)=>b+(+x.amount||0),0),0);
   const last = visits[0]?.date || "";
   if(m.type==="nonmember"){
+    if(m.lapsedOn) return { visits:visits.length, spent, last, status:"Membership expired", cls:"bad", perSession: rate("nonMember") };
     return { visits:visits.length, spent, last, status: visits.length>=4?"Offer membership":"Walk-in", cls: visits.length>=4?"warn":"", perSession: rate("nonMember") };
   }
   const p = plan(m.planId);
@@ -617,8 +663,8 @@ function totals(r){
   const exps = S.expenses.filter(e=>inR(e.date,r));
   const exp = exps.reduce((a,e)=>a+(+e.amount||0),0);
   const expMerch = exps.filter(e=>e.itemId).reduce((a,e)=>a+(+e.amount||0),0);
-  const fees = S.members.filter(m=>m.type==="member" && inR(m.feeDate,r)).reduce((a,m)=>a+(+m.feePaid||0),0);
-  const packs = S.members.filter(m=>m.type==="member" && inR(m.paidDate,r)).reduce((a,m)=>a+(+m.paid||0),0);
+  const fees = S.members.reduce((a,m)=>a+(feeCounts(m)&&inR(m.feeDate,r)?(+m.feePaid||0):0)+(m.feeHistory||[]).reduce((b,f)=>b+(inR(f.date,r)?(+f.amount||0):0),0),0);
+  const packs = S.members.filter(m=>feeCounts(m) && inR(m.paidDate,r)).reduce((a,m)=>a+(+m.paid||0),0);
   const rents = S.rentals.filter(x=>inR(x.date,r));
   const rental = rents.filter(x=>x.status==="paid").reduce((a,x)=>a+rentalAmt(x),0);
   const rentalPending = rents.filter(x=>x.status==="pending").reduce((a,x)=>a+rentalAmt(x),0);
@@ -726,6 +772,37 @@ function vSessions(){
       <div class="row" style="margin-top:10px">${statusToggles(s)}<button class="btn sm ghost" data-act="editSession" data-id="${s.id}">Edit & attendance</button></div></div>`;}).join(""):`<div class="card empty">No classes in this period. Tap “Add class” to schedule one.</div>`}`;
 }
 
+const interestOpen = new Set();
+const interestNames = m => (m.interests||[]).map(id=>ctype(id)?.name).filter(Boolean);
+function interestGroups(){
+  const non = S.members.filter(m=>m.type==="nonmember").sort((a,b)=>a.name.localeCompare(b.name));
+  const groups = S.settings.classTypes.map(t=>({id:t.id, name:t.name, people:non.filter(m=>(m.interests||[]).includes(t.id))}));
+  const none = non.filter(m=>!interestNames(m).length);
+  if(none.length) groups.push({id:"_none", name:"No class picked yet", people:none});
+  return {non, groups};
+}
+function contactHtml(c){
+  c = String(c||"").trim();
+  if(!c) return `<span class="small muted">No contact</span>`;
+  return /^\+?[\d\s().-]{7,}$/.test(c) ? `<a href="tel:${esc(c.replace(/[^\d+]/g,""))}">${esc(c)}</a>` : `<span>${esc(c)}</span>`;
+}
+function interestSummary(){
+  const {non, groups} = interestGroups();
+  if(!non.length) return "";
+  return `<div class="card"><h3>Class summary</h3>
+    <p class="small muted" style="margin:2px 0 8px">Non-members by the class they are interested in. Tap a class to see names and numbers.</p>
+    ${groups.map(g=>`<details class="isum" data-isum="${g.id}" ${interestOpen.has(g.id)?"open":""}>
+      <summary><span class="nm">${esc(g.name)}</span><span class="pill ${g.people.length&&g.id!=="_none"?"pink":""}">${g.people.length}</span></summary>
+      ${g.people.length?`<ul class="list">${g.people.map(m=>`<li><div class="row between"><b>${esc(m.name)}</b>${contactHtml(m.contact)}</div></li>`).join("")}</ul>
+      <button type="button" class="btn sm ghost" data-copy="${g.id}">Copy names and numbers</button>`:`<p class="small muted" style="margin:0 0 12px">No one yet.</p>`}
+    </details>`).join("")}</div>`;
+}
+function copyInterest(id){
+  const g = interestGroups().groups.find(x=>x.id===id); if(!g) return;
+  const text = g.name+" ("+g.people.length+")\n"+g.people.map(m=>m.name+(m.contact?" - "+m.contact:"")).join("\n");
+  const ok = ()=>toast("Copied"), bad = ()=>toast("Can't copy on this browser");
+  try{ navigator.clipboard.writeText(text).then(ok, bad); }catch(e){ bad(); }
+}
 function vMembers(){
   const q = peopleQ.toLowerCase();
   const list = S.members.filter(m=>m.type===peopleSeg && (!q || (m.name+" "+(m.contact||"")+" "+(m.memberNo||"")+" "+(m.email||"")).toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
@@ -734,13 +811,17 @@ function vMembers(){
   return `<div class="row between" style="margin-bottom:12px"><h2>Students</h2><button class="btn" data-act="${isMem?"newMember":"newNon"}">${isMem?"Add member":"Add non-member"}</button></div>
   <div class="seg" role="group" aria-label="Student type"><button data-seg="member" aria-pressed="${isMem}">Members (${cm})</button><button data-seg="nonmember" aria-pressed="${!isMem}">Non-members (${cn})</button></div>
   <p class="small muted" style="margin:-4px 0 12px">${isMem?`Paid the membership fee. Session rate: ${peso(rate("member"))} or their package.`:`No membership fee. Pays per session: ${peso(rate("nonMember"))}.`}</p>
+  ${isMem?"":interestSummary()}
   <label class="f" style="margin-bottom:14px">Search<input id="mq" type="search" value="${esc(peopleQ)}" placeholder="Name, contact, or member no."></label>
   <div class="card">${list.length?`<ul class="list">${list.map(m=>{const st=memberStats(m);return `<li><div class="row between">
     <div style="min-width:0"><b>${esc(m.name)}</b>${isMem&&m.memberNo?` <span class="pill pink">${esc(m.memberNo)}</span>`:""}
     ${isMem&&(m.validUntil||m.contract)?`<div class="small muted">${[m.validUntil?`Valid until ${fmtDate(m.validUntil)}`:"", m.validUntil&&!cardExpired(m)?`🔔 Remind ${fmtDate(remindDate(m))}`:"", m.contract?"Contract on file":""].filter(Boolean).join(" · ")}</div>`:""}
     ${isMem?`<div class="small muted">${esc(st.p?.name||"Per-session member")}${st.left!==null?` · ${st.left} left`:st.p?" · unlimited":""}${st.exp?` · ends ${fmtDate(st.exp)}`:""}</div>`
     :`<div class="small muted">${st.visits} visits · spent ${peso(st.spent)}${st.last?` · last ${fmtDate(st.last)}`:""}</div>`}
-    ${m.contact?`<div class="small muted">${esc(m.contact)}</div>`:""}</div>
+    ${m.contact?`<div class="small muted">${esc(m.contact)}</div>`:""}
+    ${!isMem&&m.email?`<div class="small muted" style="overflow-wrap:anywhere">${esc(m.email)}</div>`:""}
+    ${!isMem&&m.lapsedOn?`<div class="small muted">${esc(m.memberNo||"Member")} · expired ${fmtDate(m.validUntil)}</div>`:""}
+    ${!isMem&&interestNames(m).length?`<div class="small muted">Interested in: ${esc(interestNames(m).join(", "))}</div>`:""}</div>
     <div class="row"><span class="pill ${st.cls}">${st.status}</span><button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
     :`<p class="empty">${isMem?"No members yet. Add your first member.":"No non-members yet. Walk-ins you add in a class show up here."}</p>`}</div>`;
 }
@@ -903,7 +984,7 @@ function render(){
 /* ---------- dialog ---------- */
 const dlg = document.getElementById("dlg");
 document.getElementById("dlgX").onclick = ()=>dlg.close();
-dlg.addEventListener("close", ()=>render());
+dlg.addEventListener("close", ()=>{ if(!autoLapse()) render(); });
 function openDlg(title, body, {onSave, onDelete, saveLabel="Save", noFoot=false}={}){
   document.getElementById("dlgTitle").textContent = title;
   const bodyEl=document.getElementById("dlgBody"); bodyEl.onclick=null; bodyEl.onchange=null; bodyEl.innerHTML = body;
@@ -956,9 +1037,26 @@ function personDlg(m, type){
   : `
     <label class="f">Full name<input id="m_name" value="${esc(m.name)}"></label>
     <label class="f">Phone / FB / Viber<input id="m_contact" value="${esc(m.contact)}"></label>
+    <div class="grid2">
+      <label class="f">Email<input type="email" id="m_email" value="${esc(m.email||"")}" autocapitalize="none" spellcheck="false"></label>
+      <label class="f">Birthday<input type="date" id="m_bday" value="${m.birthday||""}"></label>
+      <label class="f">Emergency contact person<input id="m_ecName" value="${esc(m.ecName||"")}"></label>
+      <label class="f">Emergency contact no.<input id="m_ecNo" value="${esc(m.ecNo||"")}"></label>
+    </div>
+    <p class="flabel" id="m_intLbl">Interested in (tick all that apply)</p>
+    <div class="checks" role="group" aria-labelledby="m_intLbl">${S.settings.classTypes.map(t=>`<label><input type="checkbox" name="m_interest" value="${t.id}" ${(m.interests||[]).includes(t.id)?"checked":""}>${esc(t.name)}</label>`).join("")||`<span class="small muted">Add class types in Settings first.</span>`}</div>
     <p class="small muted">Non-members pay ${peso(rate("nonMember"))} per session. No membership fee.</p>
     <label class="f">Notes<textarea id="m_notes" rows="2">${esc(m.notes||"")}</textarea></label>
-    ${isNew?"":`<button type="button" class="btn sm ghost" id="m_switch">Upgrade to member</button>`}`,
+    <div class="joinbox">
+      <label><input type="checkbox" id="m_join"><span><b>${wasMember(m)?"Renew membership":"Join membership"}</b><br><span class="small muted">Tick, then Save. This person moves to Members with all their details${m.memberNo?`, as ${esc(m.memberNo)}`:""}.</span></span></label>
+      <div class="jf" id="m_jf" hidden>
+        <div class="grid2">
+          <label class="f">Membership fee paid (₱)<input type="number" min="0" id="m_jfee" value="${rate("membershipFee")}"></label>
+          <label class="f">Valid from<input type="date" id="m_jfrom" value="${todayISO()}"></label>
+        </div>
+        <p class="small muted" style="margin:0">Valid until <b id="m_juntil">${fmtDate(addMonths(todayISO(), MEMBER_MONTHS))}</b> (${MEMBER_MONTHS} months).</p>
+      </div>
+    </div>`,
   { onSave:()=>{
       const name=val("m_name"); if(!name){ toast("Enter the name"); return false; }
       if(mem){
@@ -967,6 +1065,18 @@ function personDlg(m, type){
         if(val("m_vFrom") && val("m_vUntil") && val("m_vUntil") < val("m_vFrom")){ toast("Valid until is before Valid from"); return false; }
       }
       Object.assign(m,{name, contact:val("m_contact"), notes:val("m_notes")});
+      const joining = !mem && document.getElementById("m_join").checked;
+      if(joining){
+        const from = val("m_jfrom");
+        if(!from){ toast("Enter the Valid from date"); return false; }
+        if(addMonths(from, MEMBER_MONTHS) < todayISO()){ toast("That Valid from date is already expired"); return false; }
+        if(val("m_jfee")==="" || !(+val("m_jfee")>=0)){ toast("Enter the membership fee paid"); return false; }
+      }
+      if(!mem){
+        m.interests = [...document.querySelectorAll('input[name="m_interest"]:checked')].map(x=>x.value);
+        Object.assign(m,{email:val("m_email").trim(), birthday:val("m_bday"), ecName:val("m_ecName"), ecNo:val("m_ecNo")});
+      }
+      if(joining){ joinMembership(m, val("m_jfee"), val("m_jfrom")); peopleSeg = "member"; }
       if(mem){
         Object.assign(m,{memberNo:val("m_no"), email:val("m_email"), birthday:val("m_bday"), ecName:val("m_ecName"), ecNo:val("m_ecNo"), memType:val("m_mtype"), validFrom:val("m_vFrom"), validUntil:val("m_vUntil"), receivedBy:val("m_recBy"),
           feePaid:+val("m_fee")||0, feeDate:val("m_feeDate"), planId:val("m_plan"), startDate:val("m_start"), paid:+val("m_paid")||0, paidDate:val("m_paidDate")});
@@ -975,9 +1085,14 @@ function personDlg(m, type){
           fileSave(m.id,f).catch(()=>{ m.contract=null; save(); render(); toast("Could not keep the file on this device"); }); }
         else if(cRemove) fileDel(m.id);
       }
-      if(isNew) S.members.push(m); toast(isNew?"Added":"Saved");
+      if(isNew) S.members.push(m); toast(joining?`Moved to Members as ${m.memberNo}`:isNew?"Added":"Saved");
     },
     onDelete: isNew?null:()=>{ S.members=S.members.filter(x=>x.id!==m.id); fileDel(m.id); } });
+  if(!mem){
+    const jb=document.getElementById("m_join"), jf=document.getElementById("m_jf"), jfrom=document.getElementById("m_jfrom");
+    jb.onchange=()=>{ jf.hidden = !jb.checked; };
+    jfrom.onchange=()=>{ document.getElementById("m_juntil").textContent = jfrom.value ? fmtDate(addMonths(jfrom.value, MEMBER_MONTHS)) : "—"; };
+  }
   let cMeta = m.contract ? Object.assign({},m.contract) : null, cFile=null, cBlob=null, cRemove=false;
   if(mem){
     const sel=document.getElementById("m_plan"), paid=document.getElementById("m_paid");
@@ -1150,7 +1265,7 @@ function typeDlg(t){
     <label class="f">Class type name<input id="t_name" value="${esc(t.name)}" placeholder="e.g. Zumba"></label>
     ${used?`<p class="small muted">Used in ${used} classes. Deleting keeps those classes but removes the type label.</p>`:""}`,
   { onSave:()=>{ if(!val("t_name")){ toast("Enter a name"); return false; } t.name=val("t_name"); if(isNew) S.settings.classTypes.push(t); toast(isNew?"Class type added":"Class type saved"); },
-    onDelete: isNew?null:()=>{ S.settings.classTypes=S.settings.classTypes.filter(x=>x.id!==t.id); S.settings.instructors.forEach(i=>i.types=(i.types||[]).filter(x=>x!==t.id)); S.sessions.forEach(s=>{ if(s.typeId===t.id){ s.title=t.name; s.typeId=""; } }); } });
+    onDelete: isNew?null:()=>{ S.settings.classTypes=S.settings.classTypes.filter(x=>x.id!==t.id); S.settings.instructors.forEach(i=>i.types=(i.types||[]).filter(x=>x!==t.id)); S.members.forEach(m=>{ if(m.interests) m.interests=m.interests.filter(x=>x!==t.id); }); S.sessions.forEach(s=>{ if(s.typeId===t.id){ s.title=t.name; s.typeId=""; } }); } });
 }
 
 function rentalDlg(x){
@@ -1347,9 +1462,14 @@ view.addEventListener("input", e=>{
 });
 
 document.getElementById("bell").onclick = bellDlg;
+view.addEventListener("click", e=>{ const c = e.target.closest("[data-copy]"); if(c) copyInterest(c.dataset.copy); });
+view.addEventListener("toggle", e=>{
+  const d = e.target; if(!d.dataset || !d.dataset.isum) return;
+  if(d.open) interestOpen.add(d.dataset.isum); else interestOpen.delete(d.dataset.isum);
+}, true);
 view.addEventListener("click", e=>{
   const b = e.target.closest("[data-sb]"); if(!b) return;
-  if(b.dataset.sb==="sync"){ if(sbUser) syncNow(true); else toast("You are offline."); }
+  if(b.dataset.sb==="sync"){ if(sbUser) syncTick(true); else toast("You are offline."); }
   else if(b.dataset.sb==="out"){ if(sbUser) signOut(); else toast("You are offline."); }
 });
 init();
