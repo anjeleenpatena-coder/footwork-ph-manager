@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,800&family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F7F5F9; --surface:#FFFFFF; --ink:#16101C; --muted:#655C70; --line:#E3DDE8;
@@ -179,6 +180,57 @@ table.t .r{text-align:right}
 .res.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--surface))}
 .res.warn{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 22%,var(--surface))}
 .qrimg{width:128px;height:128px;border-radius:8px;background:#fff;image-rendering:pixelated;flex:none}
+/* printable membership contract */
+#fwPrint{display:none}
+.fwc-off{position:fixed;left:-10000px;top:0;z-index:-1}
+@media print{
+  @page{size:A4;margin:0}
+  body.fw-printing{background:#fff!important;margin:0!important;padding:0!important}
+  body.fw-printing > *:not(#fwPrint){display:none!important}
+  body.fw-printing #fwPrint{display:block}
+}
+.fwc-page{width:210mm;height:297mm;padding:10mm 12mm 7mm;box-sizing:border-box;background:#fff;color:#0B0B0C;font-family:"Barlow Semi Condensed",Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact;line-height:1.25}
+.fwc-page:last-child{break-after:auto;page-break-after:auto}
+.fwc-page *{box-sizing:border-box}
+.fwc-hd{display:flex;align-items:center;gap:3.5mm}
+.fwc-hd img{width:21mm;height:21mm;object-fit:contain}
+.fwc-brand{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-style:italic;font-size:25pt;color:#FA1294;line-height:1}
+.fwc-sub{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:14pt;line-height:1.1;margin-top:.6mm}
+.fwc-small{font-size:8pt;color:#5A5A5A;margin-top:.4mm}
+.fwc-hr{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2mm}
+.fwc-tag{background:#0B0B0C;color:#B4FA2A;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-style:italic;font-size:10.5pt;padding:1.3mm 3.2mm 1.3mm 4.5mm;clip-path:polygon(2.4mm 0,100% 0,100% 100%,0 100%)}
+.fwc-no{font-size:9pt}
+.fwc-no b{font-family:"Barlow Condensed",Arial,sans-serif;font-size:12pt;color:#FA1294}
+.fwc-r1{height:.8mm;background:#FA1294;margin-top:2.2mm}
+.fwc-r2{height:.55mm;background:#B4FA2A;margin:.5mm 0 3.6mm}
+.fwc-lab{font-weight:600;font-size:6.6pt;letter-spacing:.02em;text-transform:uppercase}
+.fwc-val{font-size:10.5pt;font-weight:500;margin-top:.5mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.fwc-det{width:100%;border-collapse:collapse;table-layout:fixed}
+.fwc-det td{border:.25mm solid #0B0B0C;height:9.6mm;vertical-align:top;padding:.8mm 1.8mm}
+.fwc-bar{display:flex;align-items:center;justify-content:space-between;gap:3mm;margin:3.4mm 0 1.8mm}
+.fwc-bar span{background:#FA1294;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-style:italic;font-size:12.5pt;padding:.8mm 3mm;white-space:nowrap}
+.fwc-bar em{font-style:normal;font-weight:500;font-size:8.2pt;text-align:right}
+.fwc-pair{display:grid;grid-template-columns:1fr 1fr;gap:3.5mm}
+.fwc-trk{width:100%;border-collapse:collapse;table-layout:fixed}
+.fwc-trk th{background:#0B0B0C;color:#fff;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:7.8pt;height:5.4mm;border:.2mm solid #0B0B0C;padding:0}
+.fwc-trk td{border:.2mm solid #0B0B0C;height:6.15mm;padding:0}
+.fwc-trk td.n{color:#5A5A5A;font-size:7.6pt;font-weight:500;text-align:center}
+.fwc-trk th:nth-child(1){width:7%}.fwc-trk th:nth-child(2){width:20%}.fwc-trk th:nth-child(3){width:30%}.fwc-trk th:nth-child(4){width:12%}.fwc-trk th:nth-child(5){width:12%}
+.fwc-free{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:3mm}
+.fwc-free td{border:.25mm solid #0B0B0C;height:11mm;vertical-align:top;padding:.8mm 1.8mm}
+.fwc-free td.h{width:28%;background:#B4FA2A;vertical-align:middle;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-style:italic;font-size:11pt;line-height:1.05}
+.fwc-rem{border:.25mm solid #0B0B0C;padding:1.8mm 3mm;font-size:8.8pt;font-weight:500;margin-top:2.6mm}
+.fwc-ft{margin-top:auto;padding-top:3mm;text-align:center;font-size:7.6pt;color:#5A5A5A}
+.fwc-terms{column-count:2;column-gap:6mm;column-fill:balance}
+.fwc-sec{margin-bottom:2.6mm;break-inside:avoid}
+.fwc-sh{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:10.4pt;padding:.7mm 2mm;margin-bottom:1.2mm;break-after:avoid;break-inside:avoid}
+.fwc-sh.p{background:#FA1294}.fwc-sh.l{background:#B4FA2A}
+.fwc-terms p{margin:0 0 .8mm;font-size:9pt;line-height:1.26;padding-left:6.2mm;text-indent:-6.2mm;break-inside:avoid}
+.fwc-terms p b{display:inline-block;width:6.2mm;text-indent:0;font-weight:600}
+.fwc-ack{border-top:.7mm solid #FA1294;padding-top:2mm;margin-top:auto;font-size:9pt;font-weight:500}
+.fwc-ack b{font-family:"Barlow Condensed",Arial,sans-serif;font-size:11pt}
+.fwc-sig{display:grid;grid-template-columns:1fr 1fr;column-gap:8mm;row-gap:2.5mm;margin-top:2mm}
+.fwc-sig .ln{height:12mm;border-bottom:.3mm solid #0B0B0C;display:flex;align-items:flex-end;justify-content:center;font-size:10pt;font-weight:500;padding-bottom:.6mm;margin-bottom:.8mm}
 </style>
 </head>
 <body>
@@ -653,6 +705,133 @@ function attHistory(m){
     :`<p class="small muted" style="margin:0 0 12px">No visits yet.</p>`}</details>`;
 }
 
+/* ---------- printable membership contract (auto-filled per member) ---------- */
+const CONTRACT_TERMS = [
+ ["MEMBERSHIP",[
+  "The membership fee is ₱500 per member.",
+  "Membership is valid for four (4) months from the \"Valid from\" date on the front page.",
+  "Membership may be renewed every four (4) months for ₱500.",
+  "The membership fee is non-refundable.",
+  "Membership is non-transferable. The card is for the named member only. It cannot be lent, shared, or borrowed.",
+  "Discounts, points, and free sessions cannot be used or redeemed by another person.",
+  "Misuse of the card may cancel the membership without refund."]],
+ ["MEMBER PERKS",[
+  "₱50 off every session, for all class types.",
+  "₱100 off studio rental on the first hour only. Add-on hours are charged at the regular rate.",
+  "10% off Footwork PH merchandise.",
+  "One (1) point per visit. Ten (10) points equal one (1) free session.",
+  "One (1) free class during the member's birthday week (Monday to Sunday). A valid ID is required.",
+  "One (1) friend may join for free on the member's first class day of each membership term. This pass cannot be saved or moved to another day.",
+  "Priority booking, 24 hours ahead of walk-ins.",
+  "Price lock on the ₱300 member rate while the membership is active. The price lock does not cover promo rates."]],
+ ["SESSION RATES FOR MEMBERS",[
+  "Opening promo rate: ₱150 per session for members, for all classes.",
+  "The opening promo runs for two (2) weeks, from opening day, November 7, 2026, until November 20, 2026.",
+  "After the opening promo, the regular member rate is ₱300 per session."]],
+ ["BOOKING AND CARD RULES",[
+  "Advance booking is required before going to the studio.",
+  "The member must present the membership card at the counter on every visit so points can be recorded.",
+  "No card means no points, no perks, and no discount.",
+  "Points expire when the membership expires. Points carry over if the member renews on time.",
+  "Free sessions need advance booking and depend on open slots."]],
+ ["HEALTH DECLARATION",[
+  "The member declares that the member is physically fit to join dance and fitness classes.",
+  "The member will tell the instructor about any injury, illness, pregnancy, or medical condition before class.",
+  "The member will stop and tell the instructor right away in case of pain, dizziness, or discomfort."]],
+ ["ASSUMPTION OF RISK AND RELEASE OF LIABILITY",[
+  "The member understands that dance and fitness activities involve a risk of accident and injury.",
+  "The member joins all classes and uses the studio voluntarily and at the member's own risk.",
+  "To the extent allowed by law, Footwork PH, its owners, instructors, and staff are not responsible or liable for any accident, injury, or illness that happens inside the studio.",
+  "The member is responsible for the member's own medical expenses.",
+  "Footwork PH is not liable for lost, stolen, or damaged personal belongings."]],
+ ["PHOTO AND VIDEO CONSENT",[
+  "Footwork PH may record short group videos and photos during class, about 3 to 5 minutes only. Full sessions are not recorded.",
+  "The member understands that the member's face may be seen in these group videos and photos while dancing.",
+  "The member allows Footwork PH to post these on Facebook, TikTok, Instagram, and ads for marketing purposes.",
+  "For members below 18, the parent or guardian gives this consent."]]
+];
+const FWC_FOOT = "Footwork PH Studio · JRMD Bldg, Barrio Rd, Tayuman, Binangonan, Rizal · Facebook: Footwork PH · 0933 855 2646 / 0919 002 6419";
+
+function contractPages(d){
+  const logo = (document.querySelector(".brand img")||{}).src || "";
+  const v = x => x ? esc(x) : "";
+  const hd = tag => `<div class="fwc-hd">${logo?`<img src="${logo}" alt="">`:""}<div><div class="fwc-brand">FOOTWORK PH</div><div class="fwc-sub">MEMBERSHIP AGREEMENT</div><div class="fwc-small">Dance Fitness Studio · Tayuman, Binangonan, Rizal</div></div>
+    <div class="fwc-hr"><div class="fwc-tag">${tag}</div>${d.memberNo?`<div class="fwc-no">Member no. <b>${v(d.memberNo)}</b></div>`:""}</div></div><div class="fwc-r1"></div><div class="fwc-r2"></div>`;
+  const ft = `<div class="fwc-ft">${esc(FWC_FOOT)}</div>`;
+  const cell = (lab,val,span) => `<td${span?` colspan="${span}"`:""}><div class="fwc-lab">${lab}</div><div class="fwc-val">${val||""}</div></td>`;
+  const tick = on => on ? "☑" : "☐";
+  const fee = d.feePaid!==""&&d.feePaid!=null&&+d.feePaid>0 ? peso(d.feePaid) : "";
+  const types = (((typeof S!=="undefined")&&S&&S.settings&&S.settings.classTypes)||[]).map(t=>t.name).filter(Boolean).slice(0,5).join(", ") || "Aero Step, Zumba, Hip Hop";
+  const ROWS=24;
+  const half = start => `<table class="fwc-trk"><thead><tr><th>#</th><th>DATE</th><th>SESSION TYPE</th><th>POINTS</th><th>TOTAL</th><th>STAFF</th></tr></thead><tbody>${
+    Array.from({length:ROWS},(_,i)=>`<tr><td class="n">${start+i}</td><td></td><td></td><td></td><td></td><td></td></tr>`).join("")}</tbody></table>`;
+  const front = `<section class="fwc-page">${hd("FRONT · VISIT AND POINTS TRACKER")}
+    <table class="fwc-det"><tbody>
+      <tr>${cell("Member name", v(d.name), 2)}${cell("Member no.", v(d.memberNo))}</tr>
+      <tr>${cell("Contact no.", v(d.contact))}${cell("Birthday", fmtDate(d.birthday))}${cell("Membership type", `${tick(d.memType!=="renewal")} New &nbsp;&nbsp; ${tick(d.memType==="renewal")} Renewal`)}</tr>
+      <tr>${cell("Emergency contact person", v(d.ecName), 2)}${cell("Emergency contact no.", v(d.ecNo))}</tr>
+      <tr>${cell("Valid from", fmtDate(d.validFrom))}${cell("Valid until", fmtDate(d.validUntil))}${cell("Fee paid / received by", [fee, v(d.receivedBy)].filter(Boolean).join(" · "))}</tr>
+    </tbody></table>
+    <div class="fwc-bar"><span>VISIT AND POINTS TRACKER</span><em>1 point per visit · 10 points = 1 free session · Session types: ${esc(types)}</em></div>
+    <div class="fwc-pair">${half(1)}${half(ROWS+1)}</div>
+    <table class="fwc-free"><tr><td class="h">FREE SESSIONS<br>REDEEMED</td>${"<td><div class=\"fwc-lab\">Date / staff</div></td>".repeat(4)}</tr></table>
+    <div class="fwc-rem">Book in advance before going to the studio. Present your membership card at the counter on every visit. <b>No card = no points, no perks, no discount.</b></div>
+    ${ft}</section>`;
+  const terms = CONTRACT_TERMS.map(([h,items],i)=>`<div class="fwc-sec"><div class="fwc-sh ${i%2?"l":"p"}">${i+1}.&nbsp; ${h}</div>${items.map((t,j)=>`<p><b>${i+1}.${j+1}</b>${esc(t)}</p>`).join("")}</div>`).join("");
+  const n = CONTRACT_TERMS.length+1;
+  const back = `<section class="fwc-page">${hd("BACK · TERMS AND CONDITIONS")}
+    <div class="fwc-terms">${terms}</div>
+    <div class="fwc-ack"><b>${n}.&nbsp; ACKNOWLEDGMENT</b><br>I have read and understood these terms and conditions. I agree to follow them, and I sign this agreement voluntarily.</div>
+    <div class="fwc-sig">
+      <div><div class="ln">${v(d.name)}</div><div class="fwc-lab">Member signature over printed name</div></div>
+      <div><div class="ln"></div><div class="fwc-lab">Date signed</div></div>
+      <div><div class="ln"></div><div class="fwc-lab">Parent or guardian signature over printed name (if member is below 18)</div></div>
+      <div><div class="ln"></div><div class="fwc-lab">Footwork PH representative / date</div></div>
+    </div>
+    <div class="fwc-ft" style="margin-top:4mm">${esc(FWC_FOOT)}</div></section>`;
+  return front + back;
+}
+function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)){ res(); return; }
+  const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load")); document.head.appendChild(s); }); }
+async function contractReady(box){
+  try{ await document.fonts.ready; }catch(e){}
+  await Promise.all([...box.querySelectorAll("img")].map(i=>i.complete?null:new Promise(r=>{ i.onload=i.onerror=r; })));
+}
+async function printContract(d){
+  let box=document.getElementById("fwPrint");
+  if(!box){ box=document.createElement("div"); box.id="fwPrint"; document.body.appendChild(box); }
+  box.innerHTML = contractPages(d);
+  await contractReady(box);
+  const prev = document.title;
+  document.title = contractFileName(d).replace(/\.pdf$/,"");
+  document.body.classList.add("fw-printing");
+  const done = ()=>{ document.body.classList.remove("fw-printing"); document.title=prev; window.removeEventListener("afterprint", done); };
+  window.addEventListener("afterprint", done);
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ if(!matchMedia("print").matches) done(); }, 1500); }, 60);
+}
+const contractFileName = d => `Footwork-PH-Contract-${(d.memberNo||"member")}-${(d.name||"").trim()}`.replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf";
+async function downloadContract(d, btn){
+  const old = btn ? btn.textContent : "";
+  if(btn){ btn.disabled=true; btn.textContent="Making PDF…"; }
+  const box=document.createElement("div"); box.className="fwc-off"; box.innerHTML=contractPages(d); document.body.appendChild(box);
+  try{
+    await Promise.all([loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+                       loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")]);
+    await contractReady(box);
+    const pdf = new window.jspdf.jsPDF({unit:"mm", format:"a4", compress:true});
+    const pages=[...box.querySelectorAll(".fwc-page")];
+    for(let i=0;i<pages.length;i++){
+      const c = await window.html2canvas(pages[i], {scale:2.5, backgroundColor:"#ffffff", useCORS:true, logging:false});
+      if(i) pdf.addPage();
+      pdf.addImage(c.toDataURL("image/jpeg",0.92), "JPEG", 0, 0, 210, 297);
+    }
+    pdf.setProperties({title:"Footwork PH Membership Agreement – "+(d.name||""), author:"Footwork PH"});
+    pdf.save(contractFileName(d));
+    toast("Contract PDF downloaded");
+  }catch(e){ toast("Could not make the PDF. Use Print, then Save as PDF."); }
+  finally{ box.remove(); if(btn){ btn.disabled=false; btn.textContent=old; } }
+}
+
 /* ---------- contract files (kept on this device) ---------- */
 const FILE_DB="footworkph-files", FILE_STORE="contracts";
 function fileDb(){ return new Promise((res,rej)=>{ let rq; try{ rq=indexedDB.open(FILE_DB,1); }catch(e){ rej(e); return; }
@@ -931,7 +1110,7 @@ function vMembers(){
     ${!isMem&&m.email?`<div class="small muted" style="overflow-wrap:anywhere">${esc(m.email)}</div>`:""}
     ${!isMem&&m.lapsedOn?`<div class="small muted">${esc(m.memberNo||"Member")} · expired ${fmtDate(m.validUntil)}</div>`:""}
     ${!isMem&&interestNames(m).length?`<div class="small muted">Interested in: ${esc(interestNames(m).join(", "))}</div>`:""}</div>
-    <div class="row"><span class="pill ${st.cls}">${st.status}</span><button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
+    <div class="row"><span class="pill ${st.cls}">${st.status}</span>${isMem?`<button class="btn sm ghost" data-act="printContract" data-id="${m.id}" title="Print contract" aria-label="Print contract for ${esc(m.name)}">🖨</button>`:""}<button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
     :`<p class="empty">${isMem?"No members yet. Add your first member.":"No non-members yet. Walk-ins you add in a class show up here."}</p>`}</div>`;
 }
 
@@ -1137,7 +1316,7 @@ function personDlg(m, type){
       <label class="f">Fee received by<input id="m_recBy" value="${esc(m.receivedBy||"")}"></label>
     </div>
     <p class="small muted" style="margin:-4px 0 10px">Valid until fills in ${MEMBER_MONTHS} months after Valid from. The bell reminds you ${remindDays()} day${remindDays()===1?"":"s"} before it.</p>
-    <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Signed contract</b><div class="small muted" id="m_cinfo" style="overflow-wrap:anywhere"></div></div><div class="row" style="gap:6px" id="m_cbtns"></div></div>
+    <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Signed contract (upload)</b><div class="small muted" id="m_cinfo" style="overflow-wrap:anywhere"></div></div><div class="row" style="gap:6px" id="m_cbtns"></div></div>
       <input type="file" id="m_cfile" accept="application/pdf,image/*" hidden></div>
     ${isNew?`<p class="small muted" style="margin:0 0 10px">Save this member first. Then open them again to get the card QR code.</p>`:`<div class="cbox"><b class="small">Card QR code</b>
       <div class="row" style="margin-top:8px;align-items:flex-start;flex-wrap:nowrap"><img class="qrimg" id="m_qr" alt="Card QR code for ${esc(no)}">
@@ -1150,6 +1329,8 @@ function personDlg(m, type){
       <label class="f">Date paid<input type="date" id="m_paidDate" value="${m.paidDate||""}"></label></div>
     <label class="f">Notes<textarea id="m_notes" rows="2">${esc(m.notes||"")}</textarea></label>
     ${isNew?"":attHistory(m)}
+    <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Membership contract (PDF)</b><div class="small muted">Auto-filled with this member's details. 2 pages, A4. Print it for signing.</div></div>
+      <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_cprint">🖨 Print contract</button><button type="button" class="btn sm ghost" id="m_cpdf">Download PDF</button></div></div></div>
     ${isNew?"":`<button type="button" class="btn sm ghost" id="m_switch">Move to non-members</button>`}`
   : `
     <label class="f">Full name<input id="m_name" value="${esc(m.name)}"></label>
@@ -1203,7 +1384,7 @@ function personDlg(m, type){
           fileSave(m.id,f).catch(()=>{ m.contract=null; save(); render(); toast("Could not keep the file on this device"); }); }
         else if(cRemove) fileDel(m.id);
       }
-      if(isNew) S.members.push(m); toast(joining?`Moved to Members as ${m.memberNo}`:isNew?"Added":"Saved");
+      if(isNew) S.members.push(m); toast(joining?`Moved to Members as ${m.memberNo}`:isNew?(mem?"Added. Contract is ready to print.":"Added"):"Saved");
     },
     onDelete: isNew?null:()=>{ S.members=S.members.filter(x=>x.id!==m.id); fileDel(m.id); } });
   if(!mem){
@@ -1222,6 +1403,10 @@ function personDlg(m, type){
     };
   }
   if(mem){
+    const cData = ()=>Object.assign({}, m, {name:val("m_name"), memberNo:val("m_no"), contact:val("m_contact"), email:val("m_email"), birthday:val("m_bday"),
+      ecName:val("m_ecName"), ecNo:val("m_ecNo"), memType:val("m_mtype"), validFrom:val("m_vFrom"), validUntil:val("m_vUntil"), feePaid:val("m_fee"), receivedBy:val("m_recBy")});
+    document.getElementById("m_cprint").onclick = ()=>printContract(cData());
+    document.getElementById("m_cpdf").onclick = e=>downloadContract(cData(), e.currentTarget);
     const sel=document.getElementById("m_plan"), paid=document.getElementById("m_paid");
     sel.onchange=()=>{ const p=plan(sel.value); if(p && !paid.value) paid.value=planPrice(p); };
     const vf=document.getElementById("m_vFrom"), vu=document.getElementById("m_vUntil");
@@ -1663,6 +1848,7 @@ function handleAct(b){
   else if(a==="newMember") personDlg(null,"member");
   else if(a==="newNon") personDlg(null,"nonmember");
   else if(a==="editPerson") personDlg(member(id));
+  else if(a==="printContract") printContract(member(id));
   else if(a==="newExpense") expenseDlg();
   else if(a==="editExpense") expenseDlg(S.expenses.find(x=>x.id===id));
   else if(a==="newPlan") planDlg();
