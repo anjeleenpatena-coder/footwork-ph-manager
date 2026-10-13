@@ -196,19 +196,19 @@ table.t .r{text-align:right}
 .fwk-note{position:absolute;left:0;right:0;bottom:3mm;text-align:center;font:500 7pt "Barlow Semi Condensed",Arial,sans-serif;color:#9a9a9a}
 .fwk-pair{display:flex;gap:4mm}
 .fwk-cut{border:.2mm solid #bdbdbd}
-.fwk-card{width:85.6mm;height:54mm;background:#fff;color:#0B0B0C;position:relative;overflow:hidden;font-family:"Barlow Semi Condensed",Arial,sans-serif;line-height:1.15}
+.fwk-card{-webkit-text-size-adjust:100%;text-size-adjust:100%;width:85.6mm;height:54mm;background:#fff;color:#0B0B0C;position:relative;overflow:hidden;font-family:"Barlow Semi Condensed",Arial,sans-serif;line-height:1.15}
 .fwk-f .lg{position:absolute;left:2mm;top:9mm;width:36mm;height:36mm;object-fit:contain}
 .fwk-f .s1,.fwk-f .s2{position:absolute;top:-5mm;height:64mm;transform:skewX(-9deg)}
 .fwk-f .s1{left:41mm;width:2.2mm;background:#B4FA2A}
 .fwk-f .s2{left:44.4mm;width:1.5mm;background:#FA1294}
-.fwk-f .rt{position:absolute;left:49mm;right:3.5mm;top:3.6mm;bottom:3mm;display:flex;flex-direction:column}
+.fwk-f .rt{position:absolute;left:49mm;right:3mm;min-width:0;top:3.6mm;bottom:3mm;display:flex;flex-direction:column}
 .fwk-f .tag{align-self:flex-start;background:#B4FA2A;font:800 5.6pt "Barlow Condensed",Arial,sans-serif;letter-spacing:.09em;padding:.6mm 1.8mm}
 .fwk-f .big{font:italic 800 21pt "Barlow Condensed",Arial,sans-serif;color:#FA1294;line-height:.95;margin-top:1.4mm;letter-spacing:.01em}
 .fwk-f .cls{font:600 5.6pt "Barlow Semi Condensed",Arial,sans-serif;margin-top:.6mm}
 .fwk-f .fl{margin-top:auto;display:flex;flex-direction:column;gap:1.4mm}
 .fwk-f .lab{font:700 4.6pt "Barlow Semi Condensed",Arial,sans-serif;letter-spacing:.1em}
 .fwk-f .val{font:500 8pt "Barlow Semi Condensed",Arial,sans-serif;border-bottom:.2mm solid #0B0B0C;padding:.3mm 0 .4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:4.4mm}
-.fwk-f .two{display:grid;grid-template-columns:1fr 1fr;gap:2.4mm}
+.fwk-f .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2mm}.fwk-f .two .val{font-size:7.4pt;letter-spacing:-.01em}.fwk-f .fl>div,.fwk-f .two>div{min-width:0}
 .fwk-b{padding:3mm 3.2mm 2.6mm;display:flex;flex-direction:column}
 .fwk-b .cols{display:grid;grid-template-columns:1fr 1fr;gap:3mm}
 .fwk-b .hd{display:inline-block;font:italic 800 6.6pt "Barlow Condensed",Arial,sans-serif;padding:.5mm 2.4mm .5mm 1.6mm;margin-bottom:1.2mm;clip-path:polygon(0 0,100% 0,calc(100% - 1.4mm) 100%,0 100%)}
