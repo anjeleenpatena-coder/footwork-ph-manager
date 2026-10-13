@@ -188,6 +188,47 @@ table.t .r{text-align:right}
 .fwc-warn{background:color-mix(in srgb,var(--lime) 25%,var(--surface));border:1px solid color-mix(in srgb,var(--lime) 60%,transparent);border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.35}
 .fwc-sc{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px}
 .fwc-sc .fwc-page{margin:0 auto 12px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+
+/* printable membership ID cards (CR80, front + back side by side) */
+.fwk-sheet{width:210mm;height:297mm;background:#fff;box-sizing:border-box;padding:9mm 0 0;display:flex;flex-direction:column;align-items:center;gap:2.6mm;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:hidden;position:relative}
+.fwk-sheet:last-child{break-after:auto;page-break-after:auto}
+.fwk-sheet *{box-sizing:border-box}
+.fwk-note{position:absolute;left:0;right:0;bottom:3mm;text-align:center;font:500 7pt "Barlow Semi Condensed",Arial,sans-serif;color:#9a9a9a}
+.fwk-pair{display:flex;gap:4mm}
+.fwk-cut{border:.2mm solid #bdbdbd}
+.fwk-card{width:85.6mm;height:54mm;background:#fff;color:#0B0B0C;position:relative;overflow:hidden;font-family:"Barlow Semi Condensed",Arial,sans-serif;line-height:1.15}
+.fwk-f .lg{position:absolute;left:2.5mm;top:5mm;width:41mm;height:41mm;object-fit:contain}
+.fwk-f .s1,.fwk-f .s2{position:absolute;top:-5mm;height:64mm;transform:skewX(-9deg)}
+.fwk-f .s1{left:41mm;width:2.2mm;background:#B4FA2A}
+.fwk-f .s2{left:44.4mm;width:1.5mm;background:#FA1294}
+.fwk-f .rt{position:absolute;left:49mm;right:3.5mm;top:3.6mm;bottom:3mm;display:flex;flex-direction:column}
+.fwk-f .tag{align-self:flex-start;background:#B4FA2A;font:800 5.6pt "Barlow Condensed",Arial,sans-serif;letter-spacing:.09em;padding:.6mm 1.8mm}
+.fwk-f .big{font:italic 800 21pt "Barlow Condensed",Arial,sans-serif;color:#FA1294;line-height:.95;margin-top:1.4mm;letter-spacing:.01em}
+.fwk-f .cls{font:600 5.6pt "Barlow Semi Condensed",Arial,sans-serif;margin-top:.6mm}
+.fwk-f .fl{margin-top:auto;display:flex;flex-direction:column;gap:1.4mm}
+.fwk-f .lab{font:700 4.6pt "Barlow Semi Condensed",Arial,sans-serif;letter-spacing:.1em}
+.fwk-f .val{font:500 8pt "Barlow Semi Condensed",Arial,sans-serif;border-bottom:.2mm solid #0B0B0C;padding:.3mm 0 .4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:4.4mm}
+.fwk-f .two{display:grid;grid-template-columns:1fr 1fr;gap:2.4mm}
+.fwk-b{padding:3mm 3.2mm 2.6mm;display:flex;flex-direction:column}
+.fwk-b .cols{display:grid;grid-template-columns:1fr 1fr;gap:3mm}
+.fwk-b .hd{display:inline-block;font:italic 800 6.6pt "Barlow Condensed",Arial,sans-serif;padding:.5mm 2.4mm .5mm 1.6mm;margin-bottom:1.2mm;clip-path:polygon(0 0,100% 0,calc(100% - 1.4mm) 100%,0 100%)}
+.fwk-b .hd.p{background:#FA1294}.fwk-b .hd.k{background:#0B0B0C;color:#B4FA2A}
+.fwk-b ul{list-style:none;margin:0;padding:0}
+.fwk-b li{font-size:4.9pt;font-weight:500;margin:0 0 .45mm;padding-left:2mm;position:relative}
+.fwk-b li::before{content:"";position:absolute;left:0;top:.9mm;width:1mm;height:1mm;background:#FA1294}
+.fwk-b ol{margin:0;padding:0;list-style:none}
+.fwk-b ol li{padding-left:2.4mm}
+.fwk-b ol li::before{content:attr(data-n);background:none;top:0;width:auto;height:auto;font-weight:700}
+.fwk-b .nc{background:#B4FA2A;font:800 5.4pt "Barlow Condensed",Arial,sans-serif;padding:.7mm 1.2mm;margin:.4mm 0 .9mm}
+.fwk-b .bt{margin-top:auto;display:flex;align-items:flex-end;gap:2.4mm}
+.fwk-b .sig{flex:1;font:700 4.4pt "Barlow Semi Condensed",Arial,sans-serif;letter-spacing:.1em;border-top:.2mm solid #0B0B0C;padding-top:.5mm}
+.fwk-b .qr{width:16mm;height:16mm;image-rendering:pixelated;flex:none}
+.fwk-b .ct{text-align:right;font-size:4.5pt;font-weight:500;line-height:1.3}
+.fwk-b .ct b{display:block;font:italic 800 6.4pt "Barlow Condensed",Arial,sans-serif}
+.fwk-b .no{font:700 4.4pt "Barlow Semi Condensed",Arial,sans-serif;text-align:center;margin-top:.3mm}
+.fwk-pick{background:var(--surface);color:var(--ink);margin:12px auto;max-width:520px;border-radius:12px;padding:12px 14px}
+.fwk-pick label{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.fwk-pick input{width:20px;height:20px;accent-color:var(--pink);flex:none}
 /* printable membership contract */
 #fwPrint{display:none}
 .fwc-off{position:fixed;left:-10000px;top:0;z-index:-1}
@@ -882,6 +923,124 @@ async function downloadContract(d, btn){
   finally{ if(btn){ btn.disabled=false; btn.textContent=old; } }
 }
 const contractFileName = d => `Footwork-PH-Contract-${(d.memberNo||"member")}-${(d.name||"").trim()}`.replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf";
+
+/* ---------- printable membership ID cards (auto-filled, QR on the back) ---------- */
+const CARD_PERKS = ["₱50 off every session","₱100 off studio rental, first hour only","10% off Footwork PH merchandise","1 point per visit","10 points = 1 free session","Free class on your birthday week","Bring a friend free, first day only","Priority booking, 24 hours ahead","Price lock on your member rate"];
+const cardDate = iso => { if(!iso) return ""; const [y,m,d]=String(iso).split("-"); return y&&m&&d ? `${m}/${d}/${y}` : ""; };
+function cardPair(m){
+  const logo = (document.querySelector(".brand img")||{}).src || "";
+  const v = x => x ? esc(x) : "";
+  let qr=""; try{ qr = qrCanvas(cardText(m), 480).toDataURL("image/png"); }catch(e){}
+  const front = `<div class="fwk-card fwk-f fwk-cut">${logo?`<img class="lg" src="${logo}" alt="">`:""}<i class="s1"></i><i class="s2"></i>
+    <div class="rt"><span class="tag">MEMBERSHIP CARD</span><div class="big">MEMBER</div><div class="cls">Aero Step · Zumba · Hip Hop</div>
+      <div class="fl"><div><div class="lab">MEMBER NAME</div><div class="val">${v(m.name)}</div></div>
+        <div><div class="lab">MEMBER NO.</div><div class="val">${v(m.memberNo)}</div></div>
+        <div class="two"><div><div class="lab">VALID FROM</div><div class="val">${cardDate(m.validFrom)}</div></div><div><div class="lab">VALID UNTIL</div><div class="val">${cardDate(m.validUntil)}</div></div></div></div></div></div>`;
+  const back = `<div class="fwk-card fwk-b fwk-cut"><div class="cols">
+      <div><span class="hd p">MEMBER PERKS</span><ul>${CARD_PERKS.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>
+      <div><span class="hd k">CARD RULES</span><ol><li data-n="1">Book in advance before going to the studio.</li><li data-n="2">Present this card at the counter on every visit.</li></ol>
+        <div class="nc">NO CARD = NO POINTS, NO PERKS, NO DISCOUNT</div>
+        <ol><li data-n="3">For the named member only. Non-transferable and non-refundable.</li><li data-n="4">Valid for 4 months. Renewable at ₱500.</li></ol></div></div>
+    <div class="bt"><div class="sig">MEMBER SIGNATURE</div><div>${qr?`<img class="qr" src="${qr}" alt="">`:""}</div>
+      <div class="ct"><b>FOOTWORK PH</b>Binangonan, Rizal · Facebook: Footwork PH<br>0933 855 2646 / 0919 002 6419</div></div></div>`;
+  return `<div class="fwk-pair">${front}${back}</div>`;
+}
+const CARDS_PER_SHEET = 5;
+function cardSheets(list){
+  const out=[]; for(let i=0;i<list.length;i+=CARDS_PER_SHEET) out.push(list.slice(i,i+CARDS_PER_SHEET));
+  return out.map(g=>`<section class="fwk-sheet">${g.map(cardPair).join("")}<div class="fwk-note">Print at 100% (actual size) · Cut on the grey lines · Put front and back together in an ID jacket</div></section>`).join("");
+}
+const cardFileName = list => (list.length===1
+  ? `Footwork-PH-Card-${list[0].memberNo||"member"}-${(list[0].name||"").trim()}`
+  : `Footwork-PH-Cards-${list.length}-members-${todayISO()}`).replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf";
+async function makeCardPdf(list){
+  const box=document.createElement("div"); box.className="fwc-off"; box.innerHTML=cardSheets(list); document.body.appendChild(box);
+  try{
+    await Promise.all([loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+                       loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")]);
+    await contractReady(box);
+    const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",compress:true});
+    const pages=[...box.querySelectorAll(".fwk-sheet")];
+    for(let i=0;i<pages.length;i++){
+      const c=await window.html2canvas(pages[i],{scale:3.2,backgroundColor:"#ffffff",useCORS:true,logging:false});
+      if(i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg",0.95),"JPEG",0,0,210,297);
+    }
+    pdf.setProperties({title:"Footwork PH Membership Cards",author:"Footwork PH"});
+    return pdf.output("blob");
+  } finally { box.remove(); }
+}
+function printCardsNow(list){
+  let box=document.getElementById("fwPrint");
+  if(!box){ box=document.createElement("div"); box.id="fwPrint"; document.body.appendChild(box); }
+  box.innerHTML = cardSheets(list);
+  const prev=document.title; document.title=cardFileName(list).replace(/\.pdf$/,"");
+  document.body.classList.add("fw-printing");
+  const done=()=>{ document.body.classList.remove("fw-printing"); document.title=prev; window.removeEventListener("afterprint",done); };
+  window.addEventListener("afterprint",done);
+  try{ window.print(); }catch(e){}
+  setTimeout(()=>{ if(!matchMedia("print").matches) done(); },2000);
+}
+function printCards(list){
+  list = (list||[]).filter(Boolean);
+  if(!list.length){ toast("No members to print"); return; }
+  const host = (dlg && dlg.open) ? dlg : document.body;
+  const old=document.getElementById("fwcOv"); if(old) old.remove();
+  const ov=document.createElement("div"); ov.className="fwc-ov"; ov.id="fwcOv";
+  const iab=inAppBrowser(), fname=cardFileName(list);
+  const title = list.length===1 ? `Card · ${esc(list[0].name||"Member")}` : `${list.length} membership cards`;
+  ov.innerHTML=`<div class="fwc-tb">
+      <div class="row"><h3>${title}</h3><button type="button" class="btn sm ghost" data-v="close">✕ Close</button></div>
+      ${iab?`<div class="fwc-warn"><b>You're in the Messenger (in-app) browser.</b> It blocks printing and downloads. Tap <b>•••</b> at the top right, then <b>Open in Safari</b> (or your browser). Then print from there.<div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-v="copy">Copy app link</button></div></div>`:""}
+      <div class="row">
+        <button type="button" class="btn sm ghost" data-v="save" disabled>Preparing PDF…</button>
+        <button type="button" class="btn sm ghost" data-v="print">🖨 Print</button>
+        ${navigator.share?`<button type="button" class="btn sm ghost" data-v="share" disabled>Share / Print PDF</button>`:""}
+      </div>
+      <div class="small muted">A4 sheet, ${CARDS_PER_SHEET} cards per page, real ID size. Print at 100% (actual size), not "Fit to page".</div>
+    </div>
+    <div class="fwc-sc"><div class="fwc-zoom">${cardSheets(list)}</div></div>`;
+  host.appendChild(ov);
+  ov.querySelectorAll(".fwk-sheet").forEach(p=>{ p.style.margin="0 auto 12px"; p.style.boxShadow="0 2px 10px rgba(0,0,0,.35)"; });
+  const zoom=ov.querySelector(".fwc-zoom"), sc=ov.querySelector(".fwc-sc");
+  const fit=()=>{ const w=sc.clientWidth-24, z=Math.min(1, w/794); zoom.style.zoom=z; };
+  fit(); window.addEventListener("resize",fit);
+  let blob=null, url=null;
+  const btn=v=>ov.querySelector(`[data-v="${v}"]`);
+  makeCardPdf(list).then(b=>{ blob=b; url=URL.createObjectURL(b);
+    const sv=btn("save"); if(sv){ sv.disabled=false; sv.textContent="⬇ Download PDF"; sv.classList.remove("ghost"); }
+    const sh=btn("share"); if(sh) sh.disabled=false;
+  }).catch(()=>{ const sv=btn("save"); if(sv) sv.textContent="PDF not available"; });
+  const close=()=>{ window.removeEventListener("resize",fit); ov.remove(); if(url) setTimeout(()=>URL.revokeObjectURL(url),60000); };
+  ov.onclick=async e=>{ const v=e.target.closest("[data-v]")?.dataset.v; if(!v) return;
+    if(v==="close") close();
+    else if(v==="print"){ if(iab){ toast("Open in Safari first to print"); return; } printCardsNow(list); }
+    else if(v==="copy"){ try{ await navigator.clipboard.writeText(location.href.split("#")[0]); toast("Link copied. Paste it in Safari."); }catch(err){ prompt("Copy this link, then open it in Safari:", location.href.split("#")[0]); } }
+    else if(v==="save" && blob){ const a=document.createElement("a"); a.href=url; a.download=fname; ov.appendChild(a); a.click(); a.remove(); toast(iab?"Messenger may block downloads. Open in Safari.":"Card PDF saved"); }
+    else if(v==="share" && blob){
+      const file=new File([blob], fname, {type:"application/pdf"});
+      try{ if(navigator.canShare && !navigator.canShare({files:[file]})) throw new Error("no"); await navigator.share({files:[file], title:"Footwork PH membership cards"}); }
+      catch(err){ if(err && err.name==="AbortError") return; window.open(url,"_blank"); }
+    }
+  };
+}
+function pickCards(){
+  const mems = S.members.filter(m=>m.type==="member").sort((a,b)=>(a.memberNo||"").localeCompare(b.memberNo||"",undefined,{numeric:true}));
+  if(!mems.length){ toast("No members yet"); return; }
+  const old=document.getElementById("fwcOv"); if(old) old.remove();
+  const ov=document.createElement("div"); ov.className="fwc-ov"; ov.id="fwcOv";
+  ov.innerHTML=`<div class="fwc-tb"><div class="row"><h3>Print membership cards</h3><button type="button" class="btn sm ghost" data-v="close">✕ Close</button></div>
+      <div class="row"><button type="button" class="btn sm" data-v="go">Make cards</button><button type="button" class="btn sm ghost" data-v="all">Tick all</button><button type="button" class="btn sm ghost" data-v="none">Clear</button></div>
+      <div class="small muted">Tick the members whose cards you will print. ${CARDS_PER_SHEET} cards fit on one A4 sheet.</div></div>
+    <div class="fwc-sc"><div class="fwk-pick">${mems.map(m=>`<label><input type="checkbox" value="${m.id}" ${cardExpired(m)?"":"checked"}><span style="flex:1;min-width:0"><b>${esc(m.memberNo||"—")}</b> · ${esc(m.name||"")}</span><span class="small muted">${m.validUntil?(cardExpired(m)?"Expired":"Until "+fmtDate(m.validUntil)):""}</span></label>`).join("")}</div></div>`;
+  document.body.appendChild(ov);
+  const boxes=()=>[...ov.querySelectorAll(".fwk-pick input")];
+  ov.onclick=e=>{ const v=e.target.closest("[data-v]")?.dataset.v; if(!v) return;
+    if(v==="close") ov.remove();
+    else if(v==="all") boxes().forEach(b=>b.checked=true);
+    else if(v==="none") boxes().forEach(b=>b.checked=false);
+    else if(v==="go"){ const ids=boxes().filter(b=>b.checked).map(b=>b.value); if(!ids.length){ toast("Tick at least one member"); return; } ov.remove(); printCards(ids.map(member)); }
+  };
+}
 /* ---------- contract files (kept on this device) ---------- */
 const FILE_DB="footworkph-files", FILE_STORE="contracts";
 function fileDb(){ return new Promise((res,rej)=>{ let rq; try{ rq=indexedDB.open(FILE_DB,1); }catch(e){ rej(e); return; }
@@ -1149,7 +1308,7 @@ function vMembers(){
   <p class="small muted" style="margin:-4px 0 12px">${isMem?`Paid the membership fee. Session rate: ${peso(rate("member"))} or their package.`:`No membership fee. Pays per session: ${peso(rate("nonMember"))}.`}</p>
   ${isMem?"":interestSummary()}
   <label class="f" style="margin-bottom:14px">Search<input id="mq" type="search" value="${esc(peopleQ)}" placeholder="Name, contact, or member no."></label>
-  ${isMem&&cm?`<div class="row" style="margin:-4px 0 14px"><button type="button" class="btn sm ghost" data-act="scan">Scan member card</button><button type="button" class="btn sm ghost" data-act="qrZip">Download all card QR codes</button></div>`:""}
+  ${isMem&&cm?`<div class="row" style="margin:-4px 0 14px"><button type="button" class="btn sm ghost" data-act="scan">Scan member card</button><button type="button" class="btn sm" data-act="cardsPick">🪪 Print membership cards</button><button type="button" class="btn sm ghost" data-act="qrZip">Download all card QR codes</button></div>`:""}
   <div class="card">${list.length?`<ul class="list">${list.map(m=>{const st=memberStats(m);return `<li><div class="row between">
     <div style="min-width:0"><b>${esc(m.name)}</b>${isMem&&m.memberNo?` <span class="pill pink">${esc(m.memberNo)}</span>`:""}
     ${isMem&&(m.validUntil||m.contract)?`<div class="small muted">${[m.validUntil?`Valid until ${fmtDate(m.validUntil)}`:"", m.validUntil&&!cardExpired(m)?`🔔 Remind ${fmtDate(remindDate(m))}`:"", m.contract?"Contract on file":""].filter(Boolean).join(" · ")}</div>`:""}
@@ -1160,7 +1319,7 @@ function vMembers(){
     ${!isMem&&m.email?`<div class="small muted" style="overflow-wrap:anywhere">${esc(m.email)}</div>`:""}
     ${!isMem&&m.lapsedOn?`<div class="small muted">${esc(m.memberNo||"Member")} · expired ${fmtDate(m.validUntil)}</div>`:""}
     ${!isMem&&interestNames(m).length?`<div class="small muted">Interested in: ${esc(interestNames(m).join(", "))}</div>`:""}</div>
-    <div class="row"><span class="pill ${st.cls}">${st.status}</span>${isMem?`<button class="btn sm ghost" data-act="printContract" data-id="${m.id}" title="Print contract" aria-label="Print contract for ${esc(m.name)}">🖨</button>`:""}<button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
+    <div class="row"><span class="pill ${st.cls}">${st.status}</span>${isMem?`<button class="btn sm ghost" data-act="printContract" data-id="${m.id}" title="Print contract" aria-label="Print contract for ${esc(m.name)}">🖨</button><button class="btn sm ghost" data-act="printCard" data-id="${m.id}" title="Print ID card" aria-label="Print ID card for ${esc(m.name)}">🪪</button>`:""}<button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
     :`<p class="empty">${isMem?"No members yet. Add your first member.":"No non-members yet. Walk-ins you add in a class show up here."}</p>`}</div>`;
 }
 
@@ -1371,7 +1530,9 @@ function personDlg(m, type){
     ${isNew?`<p class="small muted" style="margin:0 0 10px">Save this member first. Then open them again to get the card QR code.</p>`:`<div class="cbox"><b class="small">Card QR code</b>
       <div class="row" style="margin-top:8px;align-items:flex-start;flex-wrap:nowrap"><img class="qrimg" id="m_qr" alt="Card QR code for ${esc(no)}">
       <div style="min-width:0"><p class="small muted" style="margin:0 0 8px">Print this on the member's card. It holds a private code only. It works only inside your Studio Manager scanner.</p>
-      <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_qrdl">Download QR</button><button type="button" class="btn sm ghost" id="m_qrnew">New code (lost card)</button></div></div></div></div>`}
+      <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_qrdl">Download QR</button><button type="button" class="btn sm ghost" id="m_qrnew">New code (lost card)</button></div></div></div></div>
+    <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Membership ID card (PDF)</b><div class="small muted">Auto-filled with this member's details. QR code is already on the back. Real ID size.</div></div>
+      <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_card">🪪 Print / download card</button></div></div></div>`}
     <label class="f">Package<select id="m_plan"><option value="">No package (pay per session ${peso(rate("member"))})</option>${S.settings.plans.map(p=>`<option value="${p.id}" ${p.id===m.planId?"selected":""}>${esc(p.name)} — ${peso(planPrice(p))}</option>`).join("")}</select></label>
     <div class="grid2">
       <label class="f">Package start<input type="date" id="m_start" value="${m.startDate||""}"></label>
@@ -1449,8 +1610,9 @@ function personDlg(m, type){
     document.getElementById("m_qrdl").onclick = ()=>downloadQr(m);
     document.getElementById("m_qrnew").onclick = ()=>{
       if(!confirm("Make a new QR code for "+m.name+"?\n\nThe QR on the old card will stop working. You will need to print a new card.")) return;
-      m.cardCode = newCardCode(); save(); drawQr(); toast("New QR code made. Download it for the new card.");
+      m.cardCode = newCardCode(); save(); drawQr(); toast("New QR code made. Print a new card.");
     };
+    document.getElementById("m_card").onclick = ()=>printCards([Object.assign({}, m, {name:val("m_name"), memberNo:val("m_no"), validFrom:val("m_vFrom"), validUntil:val("m_vUntil")})]);
   }
   if(mem){
     const cData = ()=>Object.assign({}, m, {name:val("m_name"), memberNo:val("m_no"), contact:val("m_contact"), email:val("m_email"), birthday:val("m_bday"),
@@ -1899,6 +2061,7 @@ function handleAct(b){
   else if(a==="newNon") personDlg(null,"nonmember");
   else if(a==="editPerson") personDlg(member(id));
   else if(a==="printContract") printContract(member(id));
+  else if(a==="printCard") printCards([member(id)]);
   else if(a==="newExpense") expenseDlg();
   else if(a==="editExpense") expenseDlg(S.expenses.find(x=>x.id===id));
   else if(a==="newPlan") planDlg();
@@ -1917,6 +2080,7 @@ function handleAct(b){
   else if(a==="scan") scanDlg();
   else if(a==="scanFor") scanDlg(id);
   else if(a==="qrZip") downloadAllQr();
+  else if(a==="cardsPick") pickCards();
   else if(a==="delSale"){ if(confirm("Delete this sale?")){ S.sales=S.sales.filter(x=>x.id!==id); save(); render(); toast("Sale deleted"); } }
 }
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{ tab=b.dataset.tab; render(); window.scrollTo(0,0); });
