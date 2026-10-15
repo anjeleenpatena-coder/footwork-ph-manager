@@ -1111,19 +1111,41 @@ function periodEvent(el, type){
 }
 
 /* ---------- calculations ---------- */
+const payMode = i => (i && (i.payType==="class"||i.payType==="day") && +i.rate>0) ? i.payType : "pct";
+function payLabel(i){
+  const m = payMode(i);
+  if(m==="class") return `Fixed ${peso(i.rate)} per class`;
+  if(m==="day") return `Fixed ${peso(i.rate)} per day`;
+  const pct = isSet(i&&i.pct)?+i.pct:+S.settings.instructorPct, min = isSet(i&&i.min)?+i.min:+S.settings.minPerClass;
+  return `${pct}% / ${100-pct}% split${min?` · min ${peso(min)} per class`:""}`;
+}
 function instRate(s){
   const ins = instr(s.instructorId);
+  const mode = payMode(ins);
   const pct = isSet(s.pctOverride) ? +s.pctOverride : (ins && isSet(ins.pct) ? +ins.pct : +S.settings.instructorPct);
   const min = ins && isSet(ins.min) ? +ins.min : (+S.settings.minPerClass||0);
-  return {pct, min};
+  return {pct, min, mode, rate: mode==="pct" ? 0 : +ins.rate};
 }
+const paysFor = s => s.instStatus!=="absent" && (s.attendees||[]).length>0;
 function sessionCalc(s){
   const gross = (s.attendees||[]).reduce((a,x)=>a+(+x.amount||0),0);
-  const {pct,min} = instRate(s);
-  const byPct = gross*pct/100;
+  const {pct,min,mode,rate} = instRate(s);
   const absent = s.instStatus==="absent";
-  const inst = absent || !(s.attendees||[]).length ? 0 : Math.max(byPct, min);
-  return { gross, pct, inst, biz: gross-inst, usedMin: !absent && inst>byPct && inst>0, absent };
+  const pays = paysFor(s);
+  let inst, usedMin=false, dayShare=0;
+  if(mode==="class"){ inst = pays ? rate : 0; }
+  else if(mode==="day"){
+    // one daily rate, split evenly across this instructor's classes that day
+    const n = pays ? 1 + S.sessions.filter(x=>x.id!==s.id && x.instructorId===s.instructorId && x.date===s.date && paysFor(x)).length : 0;
+    dayShare = n; inst = pays ? rate/n : 0;
+  } else {
+    const byPct = gross*pct/100;
+    inst = pays ? Math.max(byPct, min) : 0;
+    usedMin = pays && inst>byPct && inst>0;
+  }
+  const effPct = mode==="pct" ? pct : (gross>0 ? Math.round(inst/gross*100) : 0);
+  const note = mode==="class" ? `fixed ${peso(rate)}/class` : mode==="day" ? `fixed ${peso(rate)}/day${dayShare>1?` ÷ ${dayShare} classes`:""}` : "";
+  return { gross, pct:effPct, inst, biz: gross-inst, usedMin, absent, mode, note };
 }
 const rentalAuto = r => (+r.hours||0)*(+S.settings.rental.hour||0) + (+r.extHours||0)*(+S.settings.rental.extHour||0);
 const rentalAmt = r => isSet(r.amount) ? +r.amount : rentalAuto(r);
@@ -1262,9 +1284,9 @@ function vSessions(){
     return `<div class="card">
       <div class="row between"><div><h3>${fmtDate(s.date)} · ${fmtTime(s.time)}</h3><p class="small muted" style="margin:2px 0 0"><span class="pill pink">${esc(typeName(s))}</span> · ${ins?`<button class="linkbtn" data-act="openInstr" data-id="${ins.id}">${esc(ins.name)}</button>`:"No instructor"}</p></div>
       <span class="pill ${n>+S.settings.capacity?"bad":""}">${n}/${S.settings.capacity} pax</span></div>
-      <p class="small" style="margin:10px 0 2px">Sales <b class="money">${peso(c.gross)}</b> · ${n-nm} members, ${nm} non-members${c.usedMin?` · <span class="muted">minimum pay applied</span>`:""}${c.absent?` · <span class="pill bad">Instructor absent</span>`:""}</p>
+      <p class="small" style="margin:10px 0 2px">Sales <b class="money">${peso(c.gross)}</b> · ${n-nm} members, ${nm} non-members${c.usedMin?` · <span class="muted">minimum pay applied</span>`:""}${c.note?` · <span class="muted">${c.note}</span>`:""}${c.absent?` · <span class="pill bad">Instructor absent</span>`:""}</p>
       ${splitBar(c.inst,c.biz,c.pct)}
-      <div class="row" style="margin-top:8px"><label class="small muted" for="pct_${s.id}">Instructor %</label><input class="inl" type="number" min="0" max="100" id="pct_${s.id}" data-pct="${s.id}" value="${c.pct}"></div>
+      ${c.mode==="pct"?`<div class="row" style="margin-top:8px"><label class="small muted" for="pct_${s.id}">Instructor %</label><input class="inl" type="number" min="0" max="100" id="pct_${s.id}" data-pct="${s.id}" value="${c.pct}"></div>`:""}
       <div class="row" style="margin-top:10px">${statusToggles(s)}<button class="btn sm ghost" data-act="editSession" data-id="${s.id}">Edit & attendance</button><button class="btn sm ghost" data-act="scanFor" data-id="${s.id}">Scan cards</button></div></div>`;}).join(""):`<div class="card empty">No classes in this period. Tap “Add class” to schedule one.</div>`}`;
 }
 
@@ -1350,7 +1372,7 @@ function vInstructors(){
     <div class="kpis"><div class="kpi"><span>Total commission</span><b class="money">${peso(T.earned)}</b></div><div class="kpi"><span>Pending</span><b class="money">${peso(T.pending)}</b></div></div></div>`:""}
   ${ins.length?all.map(({i,m})=>{ const pct=isSet(i.pct)?+i.pct:+S.settings.instructorPct; const min=isSet(i.min)?+i.min:+S.settings.minPerClass; const tt=teaches(i);
     return `<div class="card"><div class="row between"><div><button class="linkbtn" style="font-size:17px" data-act="openInstr" data-id="${i.id}">${esc(i.name)}</button>
-      <div class="small muted">${pct}% / ${100-pct}% split${min?` · min ${peso(min)} per class`:""}</div>
+      <div class="small muted">${payLabel(i)}</div>
       ${tt.length?`<div class="row" style="gap:6px;margin-top:4px">${tt.map(n=>`<span class="pill pink">${esc(n)}</span>`).join("")}</div>`:""}
       ${i.contact?`<div class="small" style="margin-top:4px"><a href="tel:${esc(i.contact.replace(/[^0-9+]/g,""))}">${esc(i.contact)}</a></div>`:""}</div>
       ${m.pending>0?`<span class="pill warn">Pending ${peso(m.pending)}</span>`:m.ses.length?`<span class="pill ok">All paid</span>`:`<span class="pill">No classes</span>`}</div>
@@ -1670,7 +1692,7 @@ function sessionDlg(s, preset){
       <label class="f">Time<input type="time" id="s_time" value="${s.time}"></label>
       <label class="f">Class type<select id="s_type">${typeOptions(s.typeId,"—")}</select></label>
       <label class="f">Instructor<select id="s_instr"><option value="">—</option>${S.settings.instructors.map(i=>`<option value="${i.id}" ${i.id===s.instructorId?"selected":""}>${esc(i.name)}</option>`).join("")}</select></label>
-      <label class="f">Instructor % for this class<input type="number" min="0" max="100" id="s_pct" placeholder="Default ${pct}%" value="${s.pctOverride}"></label>
+      <label class="f" id="s_pctwrap" ${instRate(s).mode!=="pct"?'style="display:none"':""}>Instructor % for this class<input type="number" min="0" max="100" id="s_pct" placeholder="Default ${pct}%" value="${s.pctOverride}"></label>
       <label class="f">Instructor attendance<select id="s_status"><option value="present" ${s.instStatus!=="absent"?"selected":""}>Present</option><option value="absent" ${s.instStatus==="absent"?"selected":""}>Absent</option></select></label>
     </div>
     <h3 style="margin:8px 0 6px">Attendance</h3>
@@ -1693,7 +1715,7 @@ function sessionDlg(s, preset){
     s.attendees.push({memberId:m.id, name:m.name, kind, amount:Math.round(amt*100)/100}); drawAtt();
   };
   document.getElementById("s_pct").oninput=e=>{ s.pctOverride=e.target.value; drawSum(); };
-  document.getElementById("s_instr").onchange=e=>{ s.instructorId=e.target.value; drawSum(); };
+  document.getElementById("s_instr").onchange=e=>{ s.instructorId=e.target.value; document.getElementById("s_pctwrap").style.display = instRate(s).mode==="pct"?"":"none"; drawSum(); };
   document.getElementById("s_status").onchange=e=>{ s.instStatus=e.target.value; drawSum(); };
   document.getElementById("s_addm").onchange=e=>{ const m=member(e.target.value); e.target.value=""; if(m) add(m,"member"); };
   document.getElementById("s_addn").onchange=e=>{ const m=member(e.target.value); e.target.value=""; if(m) add(m,"nonmember"); };
@@ -1826,6 +1848,31 @@ function scanDlg(preId){
   drawList(); startCam();
 }
 
+function payFields(i, px){
+  const t = i.payType||"pct";
+  return `<label class="f">Pay type<select id="${px}_ptype">
+      <option value="pct" ${t==="pct"?"selected":""}>% share of class sales</option>
+      <option value="class" ${t==="class"?"selected":""}>Fixed rate per class</option>
+      <option value="day" ${t==="day"?"selected":""}>Fixed rate per day</option></select></label>
+    <div class="grid2" id="${px}_pctbox" ${t!=="pct"?'style="display:none"':""}>
+      <label class="f">Instructor share (%)<input type="number" min="0" max="100" id="${px}_pct" value="${isSet(i.pct)?i.pct:""}" placeholder="Default ${S.settings.instructorPct}%"></label>
+      <label class="f">Minimum per class (₱)<input type="number" min="0" id="${px}_min" value="${isSet(i.min)?i.min:""}" placeholder="Default ${peso(S.settings.minPerClass)}"></label>
+    </div>
+    <div id="${px}_ratebox" ${t==="pct"?'style="display:none"':""}>
+      <label class="f"><span id="${px}_ratelbl">${t==="day"?"Fixed rate per day (₱)":"Fixed rate per class (₱)"}</span><input type="number" min="0" id="${px}_rate" value="${isSet(i.rate)?i.rate:""}" placeholder="e.g. 1000"></label>
+      <p class="small muted" id="${px}_ratehint" style="margin:-4px 0 12px">${t==="day"?"Paid once per day they teach. Split evenly across that day's classes.":"Paid for every class they teach with at least 1 student."}</p>
+    </div>`;
+}
+function payToggle(px){
+  const sel=document.getElementById(px+"_ptype");
+  const sync=()=>{ const t=sel.value;
+    document.getElementById(px+"_pctbox").style.display = t==="pct"?"":"none";
+    document.getElementById(px+"_ratebox").style.display = t==="pct"?"none":"";
+    document.getElementById(px+"_ratelbl").textContent = t==="day"?"Fixed rate per day (₱)":"Fixed rate per class (₱)";
+    document.getElementById(px+"_ratehint").textContent = t==="day"?"Paid once per day they teach. Split evenly across that day's classes.":"Paid for every class they teach with at least 1 student."; };
+  sel.addEventListener("change", sync);
+}
+
 function instrProfile(i){
   const r = periodRange(), m = instPeriod(i, r), span = daysBetween(r.from, r.to);
   const pct = isSet(i.pct)?+i.pct:+S.settings.instructorPct, min = isSet(i.min)?+i.min:+S.settings.minPerClass;
@@ -1842,11 +1889,8 @@ function instrProfile(i){
     </div>
     <p class="small muted" style="margin:0 0 2px;font-weight:600">Classes they teach</p>
     <div class="checks">${S.settings.classTypes.map(t=>`<label><input type="checkbox" data-teach="${t.id}" ${tt.includes(t.id)?"checked":""}>${esc(t.name)}</label>`).join("")||`<span class="small muted">Add class types in Settings.</span>`}</div>
-    <div class="grid2">
-      <label class="f">Instructor share (%)<input type="number" min="0" max="100" id="ip_pct" value="${isSet(i.pct)?i.pct:""}" placeholder="Default ${S.settings.instructorPct}%"></label>
-      <label class="f">Minimum per class (₱)<input type="number" min="0" id="ip_min" value="${isSet(i.min)?i.min:""}" placeholder="Default ${peso(S.settings.minPerClass)}"></label>
-    </div>
-    <p class="small muted" style="margin:-4px 0 12px">Split now: ${pct}% instructor / ${100-pct}% studio${min?` · min ${peso(min)}`:""}</p>
+    ${payFields(i,"ip")}
+    <p class="small muted" style="margin:-4px 0 12px">Pay now: ${payLabel(i)}</p>
     ${periodBar()}
     <div class="kpis" style="margin-top:0">
       <div class="kpi"><span>Commission earned</span><b class="money">${peso(m.earned)}</b></div>
@@ -1860,13 +1904,16 @@ function instrProfile(i){
     ${typeTbl}${monthTbl}${weekTbl}${dayTbl}
     <h3 style="margin:16px 0 6px">Classes</h3>
     ${m.ses.length?`<ul class="list">${m.ses.map(s=>{const c=sessionCalc(s);return `<li>
-      <div class="row between"><div><b>${fmtDate(s.date)}</b> ${fmtTime(s.time)}<div class="small muted">${(s.attendees||[]).length} pax · sales ${peso(c.gross)} · ${c.pct}%${c.usedMin?" (min)":""}</div></div><b class="money">${peso(c.inst)}</b></div>
+      <div class="row between"><div><b>${fmtDate(s.date)}</b> ${fmtTime(s.time)}<div class="small muted">${(s.attendees||[]).length} pax · sales ${peso(c.gross)} · ${c.mode==="pct"?`${c.pct}%${c.usedMin?" (min)":""}`:c.note}</div></div><b class="money">${peso(c.inst)}</b></div>
       <div class="row" style="margin-top:6px"><select class="sel" data-stype="${s.id}" aria-label="Class type">${typeOptions(s.typeId,"Class type…")}</select>${statusToggles(s)}</div></li>`;}).join("")}</ul>`:`<p class="empty">No classes in this period.</p>`}
   `, {noFoot:true});
   const body=document.getElementById("dlgBody");
   const upd=(k,v)=>{ i[k]= v===""?"":Math.max(0,k==="pct"?Math.min(100,+v):+v); save(); instrProfile(i); toast("Rate saved"); };
   document.getElementById("ip_pct").onchange=e=>upd("pct",e.target.value);
   document.getElementById("ip_min").onchange=e=>upd("min",e.target.value);
+  payToggle("ip");
+  document.getElementById("ip_ptype").onchange=e=>{ i.payType=e.target.value; save(); if(e.target.value==="pct"||+i.rate>0){ instrProfile(i); toast("Pay type saved"); } };
+  document.getElementById("ip_rate").onchange=e=>upd("rate",e.target.value);
   document.getElementById("ip_edit").onclick=()=>instrDlg(i);
   document.getElementById("ip_sched").onclick=()=>sessionDlg(null,{instructorId:i.id});
   const pa=document.getElementById("ip_payall"); if(pa) pa.onclick=()=>{ m.ses.forEach(s=>s.paidOut=true); save(); toast("All marked paid"); instrProfile(i); };
@@ -1882,26 +1929,25 @@ function instrProfile(i){
 }
 
 function instrDlg(i){
-  const isNew=!i; i = i || {id:uid(), name:"", contact:"", pct:"", min:"", notes:"", types:[]};
+  const isNew=!i; i = i || {id:uid(), name:"", contact:"", pct:"", min:"", payType:"pct", rate:"", notes:"", types:[]};
   const tt=i.types||[];
   openDlg(isNew?"Add instructor":"Edit instructor", `
     <label class="f">Name<input id="i_name" value="${esc(i.name)}"></label>
     <label class="f">Contact number / GCash<input id="i_contact" value="${esc(i.contact)}" inputmode="tel"></label>
     <p class="small muted" style="margin:0 0 2px;font-weight:600">Classes they teach</p>
     <div class="checks">${S.settings.classTypes.map(t=>`<label><input type="checkbox" name="i_types" value="${t.id}" ${tt.includes(t.id)?"checked":""}>${esc(t.name)}</label>`).join("")}</div>
-    <div class="grid2">
-      <label class="f">Instructor share (%)<input type="number" min="0" max="100" id="i_pct" value="${i.pct}" placeholder="Default ${S.settings.instructorPct}%"></label>
-      <label class="f">Minimum per class (₱)<input type="number" min="0" id="i_min" value="${i.min}" placeholder="Default ${peso(S.settings.minPerClass)}"></label>
-    </div>
+    ${payFields(i,"i")}
     <label class="f">Notes<textarea id="i_notes" rows="2">${esc(i.notes)}</textarea></label>`,
   { onSave:()=>{
       if(!val("i_name")){ toast("Enter a name"); return false; }
-      const p=val("i_pct"), mn=val("i_min");
-      Object.assign(i,{name:val("i_name"), contact:val("i_contact"), pct:p===""?"":Math.min(100,Math.max(0,+p)), min:mn===""?"":Math.max(0,+mn), notes:val("i_notes"),
+      const p=val("i_pct"), mn=val("i_min"), pt=val("i_ptype"), rt=val("i_rate");
+      if(pt!=="pct" && !(+rt>0)){ toast("Enter the fixed rate"); return false; }
+      Object.assign(i,{name:val("i_name"), contact:val("i_contact"), pct:p===""?"":Math.min(100,Math.max(0,+p)), min:mn===""?"":Math.max(0,+mn), payType:pt, rate:rt===""?"":Math.max(0,+rt), notes:val("i_notes"),
         types:[...document.querySelectorAll('input[name="i_types"]:checked')].map(x=>x.value)});
       if(isNew) S.settings.instructors.push(i); toast(isNew?"Instructor added":"Instructor saved");
     },
     onDelete: isNew?null:()=>{ S.settings.instructors=S.settings.instructors.filter(x=>x.id!==i.id); } });
+  payToggle("i");
 }
 
 function typeDlg(t){
