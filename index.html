@@ -229,6 +229,25 @@ table.t .r{text-align:right}
 .fwk-pick{background:var(--surface);color:var(--ink);margin:12px auto;max-width:520px;border-radius:12px;padding:12px 14px}
 .fwk-pick label{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .fwk-pick input{width:20px;height:20px;accent-color:var(--pink);flex:none}
+/* printable instructor agreement + parent consent */
+.fwd-sub{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:14pt;line-height:1.1;margin-top:.6mm}
+.fwd-intro{font-size:9.4pt;line-height:1.3;margin:0 0 2.2mm}
+.fwd-rate{display:flex;align-items:stretch;border:.25mm solid #0B0B0C;margin:3mm 0 2.6mm}
+.fwd-rate>div{padding:2mm 3.5mm}
+.fwd-rate .a{background:#FA1294;color:#fff;min-width:52mm;display:flex;flex-direction:column;justify-content:center}
+.fwd-rate .a b{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-style:italic;font-size:22pt;line-height:1}
+.fwd-rate .a span,.fwd-rate .c span{font-weight:600;font-size:6.6pt;letter-spacing:.03em;text-transform:uppercase}
+.fwd-rate .c{display:flex;flex-direction:column;justify-content:center;font-size:10.5pt;font-weight:600;line-height:1.25}
+.fwd-terms{column-count:2;column-gap:6mm;column-fill:balance}
+.fwd-terms ul{margin:0 0 .6mm;padding-left:4.2mm}
+.fwd-terms li{font-size:8.9pt;line-height:1.26;margin-bottom:.5mm;break-inside:avoid}
+.fwd-terms p.t{margin:0 0 .8mm;font-size:8.9pt;line-height:1.26}
+.fwd-box{font-size:9pt;font-weight:500;margin:.4mm 0 .8mm}
+.fwd-sig3{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:6mm;margin-top:2mm}
+.fwd-sig3 .ln,.fwd-sig2 .ln{height:12mm;border-bottom:.3mm solid #0B0B0C;display:flex;align-items:flex-end;justify-content:center;font-size:10pt;font-weight:500;padding-bottom:.6mm;margin-bottom:.8mm}
+.fwd-sig2{display:grid;grid-template-columns:1fr 1fr;column-gap:8mm;row-gap:2mm;margin-top:2mm}
+.fwd-note{font-size:8pt;color:#5A5A5A;margin:.6mm 0 0}
+.fwd-ticks{font-size:9.4pt;font-weight:500;line-height:1.55;padding:1mm 0}
 /* printable membership contract */
 #fwPrint{display:none}
 .fwc-off{position:fixed;left:-10000px;top:0;z-index:-1}
@@ -840,6 +859,184 @@ function contractPages(d){
     <div class="fwc-ft" style="margin-top:4mm">${esc(FWC_FOOT)}</div></section>`;
   return front + back;
 }
+
+/* ---------- instructor agreement + parent consent (printable) ---------- */
+const docPages = d => d.docKind==="instr" ? instrPages(d) : d.docKind==="consent" ? consentPages(d) : contractPages(d);
+const docTitle = d => d.docKind==="instr" ? "Footwork PH Instructor Agreement" : d.docKind==="consent" ? "Footwork PH Parent Consent Form" : "Footwork PH Membership Agreement";
+const docFileName = d => d.docKind==="instr" ? `Footwork-PH-Instructor-Agreement-${(d.name||"").trim()}`.replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf"
+  : d.docKind==="consent" ? `Footwork-PH-Parent-Consent-${(d.name||"").trim()}`.replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf"
+  : contractFileName(d);
+const KIDTEEN_RX = /kid|teen|k-?pop|junior|youth/i;
+function ageOn(bday){ if(!bday) return null; const b=new Date(bday+"T00:00"), t=new Date(); if(isNaN(b)) return null;
+  let a=t.getFullYear()-b.getFullYear(); const mo=t.getMonth()-b.getMonth(); if(mo<0||(mo===0&&t.getDate()<b.getDate())) a--; return a; }
+function isMinor(m){ const a=ageOn(m&&m.birthday); return a!==null && a<18; }
+function fwdHead(sub, tag){
+  const logo = (document.querySelector(".brand img")||{}).src || "";
+  return `<div class="fwc-hd">${logo?`<img src="${logo}" alt="">`:""}<div><div class="fwc-brand">FOOTWORK PH</div><div class="fwd-sub">${sub}</div><div class="fwc-small">Footwork Fitness Studio · Tayuman, Binangonan, Rizal</div></div>
+    <div class="fwc-hr"><div class="fwc-tag">${tag}</div></div></div><div class="fwc-r1"></div><div class="fwc-r2"></div>`;
+}
+const fwdSec = (n, title, i, paras, items) => `<div class="fwc-sec"><div class="fwc-sh ${i%2?"l":"p"}">${n}.&nbsp; ${title}</div>${(paras||[]).map(t=>`<p class="t">${t}</p>`).join("")}${items&&items.length?`<ul>${items.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}</div>`;
+const fwdCell = (lab,val,span) => `<td${span?` colspan="${span}"`:""}><div class="fwc-lab">${lab}</div><div class="fwc-val">${val||""}</div></td>`;
+
+function instrDocData(i){
+  const names = teaches(i);
+  const mode = payMode(i);
+  const pct = isSet(i.pct)?+i.pct:+S.settings.instructorPct, min = isSet(i.min)?+i.min:+S.settings.minPerClass;
+  return { docKind:"instr", name:i.name||"", contact:i.contact||"", classes:names, mode, rate:+i.rate||0, pct, min,
+    kids: names.some(n=>KIDTEEN_RX.test(n)) };
+}
+function instrPages(d){
+  const v = x => x ? esc(x) : "";
+  const classes = d.classes.length ? d.classes.join(", ") : "Dance fitness classes";
+  const big = d.mode==="class" ? `${peso(d.rate)} <span style="font-size:10pt;font-style:normal">/ class</span>`
+    : d.mode==="day" ? `${peso(d.rate)} <span style="font-size:10pt;font-style:normal">/ day</span>`
+    : `${d.pct}% <span style="font-size:10pt;font-style:normal">of class sales</span>`;
+  const payLine = d.mode==="class" ? `The Instructor is paid a <b>fixed rate of ${peso(d.rate)} per class</b>. The rate stays the same no matter how many students attend.`
+    : d.mode==="day" ? `The Instructor is paid a <b>fixed rate of ${peso(d.rate)} per day</b> of teaching, no matter how many classes or students that day.`
+    : `The Instructor is paid <b>${d.pct}% of the class sales</b> for each class they teach. The Studio keeps ${100-d.pct}%.${d.min?` The minimum pay is <b>${peso(d.min)} per class</b>.`:""}`;
+  let n=0, k=0;
+  const S1 = [
+    fwdSec(++n,"ROLE",k++,[`The Instructor will teach <b>${esc(classes)}</b> at Footwork PH as a <b>freelance instructor</b>. This is not employment. There is no employer-employee relationship between the Studio and the Instructor.`,
+      "The Studio does not pay SSS, PhilHealth, Pag-IBIG, 13th month pay, or other employee benefits. The Instructor is responsible for their own taxes and government contributions."]),
+    fwdSec(++n,"PAY",k++,[],[payLine,
+      "A class is paid only if (1) the Instructor is present and teaches it, and (2) at least one student attends.",
+      "If no student books, the Studio will cancel the class and tell the Instructor at least <b>3 hours</b> before. Cancelled classes are not paid.",
+      "Pay is given <b>after each class</b>, in cash or through GCash. The Instructor confirms each payment received.",
+      "The Studio handles all bookings and student payments. The Instructor does not collect fees from Studio students."]),
+    fwdSec(++n,"SCHEDULE AND ATTENDANCE",k++,[],[
+      "The Studio and the Instructor agree on the class schedule. The Studio posts it to members.",
+      "The Instructor arrives at least <b>15 minutes</b> before class to set up.",
+      "If the Instructor cannot teach, they must tell the Studio at least <b>24 hours</b> before, except for emergencies.",
+      "A substitute instructor may only teach if the Studio approves first.",
+      "Two (2) no-shows without notice may end this agreement."]),
+    fwdSec(++n,"CLASS STANDARDS AND SAFETY",k++,[],[
+      "Every class includes a proper warm-up and cool-down.",
+      "The Instructor gives easier options for beginners and students with health limits.",
+      `Classes follow the Studio limit of <b>${+S.settings.capacity||10} students</b> per class.`,
+      "If a student gets hurt or feels unwell, the Instructor stops the activity, gives first aid if able, and tells the Studio right away.",
+      "The Instructor takes care of Studio equipment and reports any damage."])];
+  const S2 = [];
+  if(d.kids) S2.push(fwdSec(++n,"KIDS AND TEENS SAFETY",k++,["Because this Instructor handles kids and teens, these rules apply:"],[
+      "Children are released only to their parent, guardian, or an adult the parent named.",
+      "The Instructor talks to parents, not to the child, about schedules and concerns. No private chats with minors.",
+      "The Instructor is never alone with a child in a closed room.",
+      "No shouting, shaming, or physical punishment. Correction is kind and positive.",
+      "Dance moves, music, and outfits must be age-appropriate.",
+      "Any concern about a child's safety is reported to the Studio the same day."]));
+  S2.push(
+    fwdSec(++n,"CONDUCT",k++,[],[
+      "The Instructor is professional and respectful to students, parents, and staff.",
+      "No alcohol, smoking, or vaping inside the Studio. No teaching under the influence.",
+      "Student information is used only for classes and is never shared, in line with the Data Privacy Act of 2012."]),
+    fwdSec(++n,"STUDIO STUDENTS",k++,["While this agreement is active, the Instructor will not offer paid private or outside classes to Footwork PH students, or invite them to another studio, without the Studio's written approval."]),
+    fwdSec(++n,"PHOTOS AND VIDEOS",k++,["The Instructor allows the Studio to use their name, photo, and short class videos on Footwork PH posters and social media pages."]),
+    fwdSec(++n,"RATE CHANGES",k++,["The rate may be reviewed later. Any change must be agreed by both sides in writing, by a signed update or a written message."]),
+    fwdSec(++n,"START AND END",k++,[],[
+      "This agreement starts on ____________________ and continues month to month.",
+      "Either side may end it with <b>7 days' written notice</b>. A Viber or Messenger message counts.",
+      "The Studio may end it right away for serious misconduct, such as harming a student, theft, or teaching under the influence.",
+      "Any unpaid class fee earned before the end date will be paid in full."]));
+  const ft = `<div class="fwc-ft">${esc(FWC_FOOT)}</div>`;
+  const p1 = `<section class="fwc-page">${fwdHead("FREELANCE INSTRUCTOR AGREEMENT","PAGE 1 · DETAILS")}
+    <p class="fwd-intro">This agreement is made on ____________________ in Binangonan, Rizal, between <b>Footwork Fitness Studio</b> (brand name: Footwork PH), represented by <b>Footwork PH Management</b> (the "Studio"), and the Instructor below.</p>
+    <table class="fwc-det"><tbody>
+      <tr>${fwdCell("Instructor name", v(d.name), 2)}${fwdCell("Contact no. / GCash", v(d.contact))}</tr>
+      <tr>${fwdCell("Home address","",2)}${fwdCell("Valid ID / no.","")}</tr>
+      <tr>${fwdCell("Studio address","JRMD Bldg, Barrio Rd, Tayuman, Binangonan, Rizal",2)}${fwdCell("Studio contact","0933 855 2646 / 0919 002 6419")}</tr>
+    </tbody></table>
+    <div class="fwd-rate"><div class="a"><span>${d.mode==="pct"?"Commission":"Fixed rate"}</span><b>${big}</b></div><div class="c"><span>Classes assigned</span>${esc(classes)}</div></div>
+    <div class="fwd-terms">${S1.join("")}</div>${ft}</section>`;
+  const p2 = `<section class="fwc-page">${fwdHead("FREELANCE INSTRUCTOR AGREEMENT","PAGE 2 · TERMS")}
+    <div class="fwd-terms">${S2.join("")}</div>
+    <div class="fwc-ack"><b>${++n}.&nbsp; AGREEMENT</b><br>Both sides read and understood this agreement and sign it freely. Each side keeps one signed copy.</div>
+    <div class="fwd-sig2">
+      <div><div class="ln">FOOTWORK PH MANAGEMENT</div><div class="fwc-lab">Authorized representative · signature / date</div></div>
+      <div><div class="ln">${v(d.name)}</div><div class="fwc-lab">Instructor signature over printed name / date</div></div>
+      <div><div class="ln"></div><div class="fwc-lab">Witness · signature over printed name</div></div>
+      <div><div class="ln"></div><div class="fwc-lab">Witness · signature over printed name</div></div>
+    </div>
+    <div class="fwc-ft" style="margin-top:4mm">${esc(FWC_FOOT)}</div></section>`;
+  return p1 + p2;
+}
+
+function consentDocData(m){ return Object.assign({}, m, {docKind:"consent"}); }
+function consentPages(d){
+  const v = x => x ? esc(x) : "";
+  const tick = on => on ? "☑" : "☐";
+  const age = ageOn(d.birthday);
+  const types = (S.settings.classTypes||[]);
+  const picked = d.interests||[];
+  const list = types;
+  const ticks = list.map(t=>`${tick(picked.includes(t.id))} ${esc(t.name)}`).join("&nbsp;&nbsp;&nbsp;&nbsp; ") + "&nbsp;&nbsp;&nbsp;&nbsp; ☐ Other: ______________";
+  const isMem = d.type==="member";
+  let n=0, k=0;
+  const terms = [
+    fwdSec(++n,"PERMISSION TO JOIN",k++,["I allow my child to join Footwork PH dance classes. Classes are by appointment only, and I follow the Studio's booking and payment rules."]),
+    fwdSec(++n,"HEALTH AND FITNESS",k++,[],[
+      "My child is healthy and fit to join dance and fitness activities.",
+      "I listed all health conditions on page 1. I will tell the Studio right away if anything changes.",
+      "My child will bring water, wear comfortable clothes and rubber shoes, and eat a light meal before class."]),
+    fwdSec(++n,"EMERGENCIES",k++,[],[
+      "If my child gets hurt or feels unwell, the Studio will give first aid and call me right away.",
+      "If it is serious and I cannot be reached, I allow the Studio to bring my child to the nearest hospital or clinic.",
+      "I will pay for any medical costs."]),
+    fwdSec(++n,"DROP-OFF AND PICK-UP",k++,[],[
+      "I will bring my child at least <b>10 minutes</b> before class and pick them up within <b>15 minutes</b> after class.",
+      "My child will be released only to me or to the authorized persons on page 1.",
+      "The Studio looks after my child only during class time inside the Studio."]),
+    fwdSec(++n,"STUDENT RULES",k++,[],[
+      "Listen to the instructor and follow safety instructions.",
+      "Be kind and respectful. No rough play, teasing, or bullying.",
+      "Do not leave the Studio during class without permission.",
+      "Phones stay in bags during class.",
+      "Repeated bad behavior may lead to removal from class. The parent is informed first."]),
+    fwdSec(++n,"RISKS AND RESPONSIBILITY",k++,["Dance is a physical activity, and minor injuries like sprains or bruises can happen. The Studio and instructors take proper care. The Studio is not liable for accidents during class, except those caused by the Studio's gross negligence."]),
+    fwdSec(++n,"PERSONAL BELONGINGS",k++,["The Studio is not responsible for lost or damaged items. Please do not bring valuables."]),
+    fwdSec(++n,"PHOTOS AND VIDEOS",k++,["The Studio records short group class videos and photos for its Facebook page and posters. As parent or guardian, I choose:",
+      `<span class="fwd-box">☐ <b>Yes</b>, my child may appear.<br>☐ <b>No</b>, please do not show my child's face.</span>`]),
+    fwdSec(++n,"DATA PRIVACY",k++,["This form is used only for classes, safety, and emergencies. It is kept private and not shared, in line with the Data Privacy Act of 2012."])];
+  const ft = `<div class="fwc-ft">${esc(FWC_FOOT)}</div>`;
+  const p1 = `<section class="fwc-page">${fwdHead("PARENT / GUARDIAN CONSENT FORM","KIDS AND TEENS · PAGE 1")}
+    <p class="fwd-intro">Required for every student below 18 years old. A parent or legal guardian fills this out and signs it before the child's first class.</p>
+    <div class="fwc-bar"><span>A. STUDENT</span><em>${isMem&&d.memberNo?`Member no. ${v(d.memberNo)}`:""}</em></div>
+    <table class="fwc-det"><tbody>
+      <tr>${fwdCell("Student full name", v(d.name), 2)}${fwdCell("Nickname","")}</tr>
+      <tr>${fwdCell("Birthday", fmtDate(d.birthday))}${fwdCell("Age", age!==null?String(age):"")}${fwdCell("Student type", `${tick(isMem)} Member &nbsp;&nbsp; ${tick(!isMem)} Non-member`)}</tr>
+      <tr>${fwdCell("School / grade","",3)}</tr>
+    </tbody></table>
+    <div class="fwc-lab" style="margin-top:2mm">Class / classes joining</div>
+    <div class="fwd-ticks">${ticks}</div>
+    <div class="fwc-bar"><span>B. PARENT / GUARDIAN</span><em></em></div>
+    <table class="fwc-det"><tbody>
+      <tr>${fwdCell("Full name","",2)}${fwdCell("Relationship to student","")}</tr>
+      <tr>${fwdCell("Mobile (Viber)", v(d.contact))}${fwdCell("Email", v(d.email), 2)}</tr>
+      <tr>${fwdCell("Home address","",3)}</tr>
+    </tbody></table>
+    <div class="fwc-bar"><span>C. EMERGENCY CONTACT</span><em>Other than the parent above</em></div>
+    <table class="fwc-det"><tbody><tr>${fwdCell("Full name", v(d.ecName))}${fwdCell("Relationship","")}${fwdCell("Mobile", v(d.ecNo))}</tr></tbody></table>
+    <div class="fwc-bar"><span>D. AUTHORIZED PICK-UP</span><em>Only these people may pick up the child</em></div>
+    <table class="fwc-det"><tbody>
+      <tr>${fwdCell("1. Full name","",2)}${fwdCell("Relationship / mobile","")}</tr>
+      <tr>${fwdCell("2. Full name","",2)}${fwdCell("Relationship / mobile","")}</tr>
+    </tbody></table>
+    <div class="fwd-ticks"><b>Teens only:</b> ☐ My child may go home on their own after class. &nbsp;&nbsp; ☐ My child must be picked up.</div>
+    <div class="fwc-bar"><span>E. HEALTH</span><em>Write "none" if none</em></div>
+    <table class="fwc-det"><tbody>
+      <tr>${fwdCell("Allergies","")}${fwdCell("Health conditions (asthma, heart, seizures…)","",2)}</tr>
+      <tr>${fwdCell("Medicines taken","")}${fwdCell("Past injuries","",2)}</tr>
+    </tbody></table>
+    ${ft}</section>`;
+  const p2 = `<section class="fwc-page">${fwdHead("PARENT / GUARDIAN CONSENT FORM","KIDS AND TEENS · PAGE 2")}
+    <div class="fwd-terms">${terms.join("")}</div>
+    <div class="fwc-ack"><b>${++n}.&nbsp; AGREEMENT</b><br>I have read and understood this form. The information I gave is true. I sign it freely as the child's parent or legal guardian.</div>
+    <div class="fwd-sig3">
+      <div><div class="ln"></div><div class="fwc-lab">Parent / guardian signature over printed name / date</div></div>
+      <div><div class="ln">${v(d.name)}</div><div class="fwc-lab">Student signature (teens, optional)</div></div>
+      <div><div class="ln">FOOTWORK PH MANAGEMENT</div><div class="fwc-lab">Received by / date</div></div>
+    </div>
+    <div class="fwc-ft" style="margin-top:4mm">${esc(FWC_FOOT)}</div></section>`;
+  return p1 + p2;
+}
 function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)){ res(); return; }
   const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load")); document.head.appendChild(s); }); }
 async function contractReady(box){
@@ -850,8 +1047,8 @@ const inAppBrowser = () => /FBAN|FBAV|FB_IAB|Messenger|Instagram|Line\/|Viber|Ti
 function printNow(d){
   let box=document.getElementById("fwPrint");
   if(!box){ box=document.createElement("div"); box.id="fwPrint"; document.body.appendChild(box); }
-  box.innerHTML = contractPages(d);
-  const prev=document.title; document.title=contractFileName(d).replace(/\.pdf$/,"");
+  box.innerHTML = docPages(d);
+  const prev=document.title; document.title=docFileName(d).replace(/\.pdf$/,"");
   document.body.classList.add("fw-printing");
   const done=()=>{ document.body.classList.remove("fw-printing"); document.title=prev; window.removeEventListener("afterprint",done); };
   window.addEventListener("afterprint",done);
@@ -859,7 +1056,7 @@ function printNow(d){
   setTimeout(()=>{ if(!matchMedia("print").matches) done(); },2000);
 }
 async function makeContractPdf(d){
-  const box=document.createElement("div"); box.className="fwc-off"; box.innerHTML=contractPages(d); document.body.appendChild(box);
+  const box=document.createElement("div"); box.className="fwc-off"; box.innerHTML=docPages(d); document.body.appendChild(box);
   try{
     await Promise.all([loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
                        loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")]);
@@ -870,7 +1067,7 @@ async function makeContractPdf(d){
       const c=await window.html2canvas(pages[i],{scale:2.5,backgroundColor:"#ffffff",useCORS:true,logging:false});
       if(i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg",0.92),"JPEG",0,0,210,297);
     }
-    pdf.setProperties({title:"Footwork PH Membership Agreement – "+(d.name||""),author:"Footwork PH"});
+    pdf.setProperties({title:docTitle(d)+" – "+(d.name||""),author:"Footwork PH"});
     return pdf.output("blob");
   } finally { box.remove(); }
 }
@@ -879,9 +1076,9 @@ function printContract(d){
   const old=document.getElementById("fwcOv"); if(old) old.remove();
   const ov=document.createElement("div"); ov.className="fwc-ov"; ov.id="fwcOv";
   const iab=inAppBrowser();
-  const fname=contractFileName(d);
+  const fname=docFileName(d);
   ov.innerHTML=`<div class="fwc-tb">
-      <div class="row"><h3>Contract · ${esc(d.name||"Member")}</h3><button type="button" class="btn sm ghost" data-v="close">✕ Close</button></div>
+      <div class="row"><h3>${esc(d.docKind==="instr"?"Instructor agreement":d.docKind==="consent"?"Parent consent":"Contract")} · ${esc(d.name||"Member")}</h3><button type="button" class="btn sm ghost" data-v="close">✕ Close</button></div>
       ${iab?`<div class="fwc-warn"><b>You're in the Messenger (in-app) browser.</b> It blocks printing and downloads. Tap <b>•••</b> at the top right, then <b>Open in Safari</b> (or your browser). Then print from there.<div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-v="copy">Copy app link</button></div></div>`:""}
       <div class="row">
         <button type="button" class="btn sm" data-v="print">🖨 Print</button>
@@ -890,7 +1087,7 @@ function printContract(d){
       </div>
       <div class="small muted" id="fwcHint">${iab?"":"If Print does not open, use Share / Print PDF, then choose Print."}</div>
     </div>
-    <div class="fwc-sc"><div class="fwc-zoom">${contractPages(d)}</div></div>`;
+    <div class="fwc-sc"><div class="fwc-zoom">${docPages(d)}</div></div>`;
   host.appendChild(ov);
   const zoom=ov.querySelector(".fwc-zoom"), sc=ov.querySelector(".fwc-sc");
   const fit=()=>{ const w=sc.clientWidth-24, z=Math.min(1, w/794); zoom.style.zoom=z; };
@@ -916,9 +1113,9 @@ function printContract(d){
 }
 async function downloadContract(d, btn){
   const old=btn?btn.textContent:""; if(btn){ btn.disabled=true; btn.textContent="Making PDF…"; }
-  try{ const b=await makeContractPdf(d); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download=contractFileName(d);
+  try{ const b=await makeContractPdf(d); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download=docFileName(d);
     ((dlg&&dlg.open)?dlg:document.body).appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),60000);
-    toast(inAppBrowser()?"Messenger may block downloads. Open in Safari.":"Contract PDF downloaded"); }
+    toast(inAppBrowser()?"Messenger may block downloads. Open in Safari.":"PDF downloaded"); }
   catch(e){ toast("Could not make the PDF. Try Print contract."); }
   finally{ if(btn){ btn.disabled=false; btn.textContent=old; } }
 }
@@ -1342,7 +1539,7 @@ function vMembers(){
     ${!isMem&&m.email?`<div class="small muted" style="overflow-wrap:anywhere">${esc(m.email)}</div>`:""}
     ${!isMem&&m.lapsedOn?`<div class="small muted">${esc(m.memberNo||"Member")} · expired ${fmtDate(m.validUntil)}</div>`:""}
     ${!isMem&&interestNames(m).length?`<div class="small muted">Interested in: ${esc(interestNames(m).join(", "))}</div>`:""}</div>
-    <div class="row"><span class="pill ${st.cls}">${st.status}</span>${isMem?`<button class="btn sm ghost" data-act="printContract" data-id="${m.id}" title="Print contract" aria-label="Print contract for ${esc(m.name)}">🖨</button><button class="btn sm ghost" data-act="printCard" data-id="${m.id}" title="Print ID card" aria-label="Print ID card for ${esc(m.name)}">🪪</button>`:""}<button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
+    <div class="row"><span class="pill ${st.cls}">${st.status}</span>${isMem?`<button class="btn sm ghost" data-act="printContract" data-id="${m.id}" title="Print contract" aria-label="Print contract for ${esc(m.name)}">🖨</button><button class="btn sm ghost" data-act="printCard" data-id="${m.id}" title="Print ID card" aria-label="Print ID card for ${esc(m.name)}">🪪</button>`:""}${isMinor(m)?`<button class="btn sm ghost" data-act="printConsent" data-id="${m.id}" title="Print parent consent" aria-label="Print parent consent for ${esc(m.name)}">👪</button>`:""}<button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
     :`<p class="empty">${isMem?"No members yet. Add your first member.":"No non-members yet. Walk-ins you add in a class show up here."}</p>`}</div>`;
 }
 
@@ -1382,7 +1579,7 @@ function vInstructors(){
         <div class="kpi"><span>Paid</span><b class="money" style="color:var(--good)">${peso(m.paid)}</b></div>
         <div class="kpi"><span>Present / absent</span><b>${m.present} / ${m.absent}</b></div>
       </div>
-      <div class="row" style="margin-top:12px"><button class="btn sm ghost" data-act="openInstr" data-id="${i.id}">See breakdown</button><button class="btn sm ghost" data-act="schedFor" data-id="${i.id}">Schedule a class</button></div></div>`; }).join("")
+      <div class="row" style="margin-top:12px"><button class="btn sm ghost" data-act="openInstr" data-id="${i.id}">See breakdown</button><button class="btn sm ghost" data-act="schedFor" data-id="${i.id}">Schedule a class</button><button class="btn sm ghost" data-act="printInstrContract" data-id="${i.id}">🖨 Contract</button></div></div>`; }).join("")
   :`<div class="card empty">No instructors yet. Add one to track commission and attendance.</div>`}`;
 }
 
@@ -1565,6 +1762,8 @@ function personDlg(m, type){
     ${isNew?"":attHistory(m)}
     <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Membership contract (PDF)</b><div class="small muted">Auto-filled with this member's details. 2 pages, A4. Print it for signing.</div></div>
       <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_cprint">🖨 Print contract</button><button type="button" class="btn sm ghost" id="m_cpdf">Download PDF</button></div></div></div>
+    <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Parent consent form (kids &amp; teens)</b><div class="small muted">For students below 18. Auto-filled with this student's details. 2 pages, A4.</div></div>
+      <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_kprint">👪 Print consent</button><button type="button" class="btn sm ghost" id="m_kpdf">Download PDF</button></div></div></div>
     ${isNew?"":`<button type="button" class="btn sm ghost" id="m_switch">Move to non-members</button>`}`
   : `
     <label class="f">Full name<input id="m_name" value="${esc(m.name)}"></label>
@@ -1580,6 +1779,8 @@ function personDlg(m, type){
     <p class="small muted">Non-members pay ${peso(rate("nonMember"))} per session. No membership fee.</p>
     <label class="f">Notes<textarea id="m_notes" rows="2">${esc(m.notes||"")}</textarea></label>
     ${isNew?"":attHistory(m)}
+    <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Parent consent form (kids &amp; teens)</b><div class="small muted">For students below 18. Auto-filled with this student's details. 2 pages, A4.</div></div>
+      <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_kprint">👪 Print consent</button><button type="button" class="btn sm ghost" id="m_kpdf">Download PDF</button></div></div></div>
     <div class="joinbox">
       <label><input type="checkbox" id="m_join"><span><b>${wasMember(m)?"Renew membership":"Join membership"}</b><br><span class="small muted">Tick, then Save. This person moves to Members with all their details${m.memberNo?`, as ${esc(m.memberNo)}`:""}.</span></span></label>
       <div class="jf" id="m_jf" hidden>
@@ -1637,6 +1838,11 @@ function personDlg(m, type){
     };
     document.getElementById("m_card").onclick = ()=>printCards([Object.assign({}, m, {name:val("m_name"), memberNo:val("m_no"), validFrom:val("m_vFrom"), validUntil:val("m_vUntil")})]);
   }
+  { const kData = ()=>consentDocData(Object.assign({}, m, {type: mem?"member":"nonmember", name:val("m_name"), contact:val("m_contact"), email:val("m_email"), birthday:val("m_bday"),
+      ecName:val("m_ecName"), ecNo:val("m_ecNo"), memberNo: mem?val("m_no"):m.memberNo,
+      interests: mem ? (m.interests||[]) : [...document.querySelectorAll('input[name="m_interest"]:checked')].map(x=>x.value)}));
+    document.getElementById("m_kprint").onclick = ()=>printContract(kData());
+    document.getElementById("m_kpdf").onclick = e=>downloadContract(kData(), e.currentTarget); }
   if(mem){
     const cData = ()=>Object.assign({}, m, {name:val("m_name"), memberNo:val("m_no"), contact:val("m_contact"), email:val("m_email"), birthday:val("m_bday"),
       ecName:val("m_ecName"), ecNo:val("m_ecNo"), memType:val("m_mtype"), validFrom:val("m_vFrom"), validUntil:val("m_vUntil"), feePaid:val("m_fee"), receivedBy:val("m_recBy")});
@@ -1885,7 +2091,7 @@ function instrProfile(i){
   openDlg(i.name, `
     <div class="row between" style="margin-bottom:12px">
       <div>${i.contact?`<a href="tel:${esc(tel)}" style="font-weight:700">${esc(i.contact)}</a><div class="row small" style="margin-top:4px"><a href="sms:${esc(tel)}">Text</a><a href="viber://chat?number=${encodeURIComponent(tel)}">Viber</a></div>`:`<span class="muted small">No contact number</span>`}</div>
-      <div class="row"><button type="button" class="btn sm" id="ip_sched">Schedule a class</button><button type="button" class="btn sm ghost" id="ip_edit">Edit details</button></div>
+      <div class="row"><button type="button" class="btn sm" id="ip_sched">Schedule a class</button><button type="button" class="btn sm ghost" id="ip_edit">Edit details</button><button type="button" class="btn sm ghost" id="ip_contract">🖨 Contract</button></div>
     </div>
     <p class="small muted" style="margin:0 0 2px;font-weight:600">Classes they teach</p>
     <div class="checks">${S.settings.classTypes.map(t=>`<label><input type="checkbox" data-teach="${t.id}" ${tt.includes(t.id)?"checked":""}>${esc(t.name)}</label>`).join("")||`<span class="small muted">Add class types in Settings.</span>`}</div>
@@ -1915,6 +2121,7 @@ function instrProfile(i){
   document.getElementById("ip_ptype").onchange=e=>{ i.payType=e.target.value; save(); if(e.target.value==="pct"||+i.rate>0){ instrProfile(i); toast("Pay type saved"); } };
   document.getElementById("ip_rate").onchange=e=>upd("rate",e.target.value);
   document.getElementById("ip_edit").onclick=()=>instrDlg(i);
+  document.getElementById("ip_contract").onclick=()=>printContract(instrDocData(i));
   document.getElementById("ip_sched").onclick=()=>sessionDlg(null,{instructorId:i.id});
   const pa=document.getElementById("ip_payall"); if(pa) pa.onclick=()=>{ m.ses.forEach(s=>s.paidOut=true); save(); toast("All marked paid"); instrProfile(i); };
   body.onclick=e=>{
@@ -2109,6 +2316,8 @@ function handleAct(b){
   else if(a==="editPerson") personDlg(member(id));
   else if(a==="printContract") printContract(member(id));
   else if(a==="printCard") printCards([member(id)]);
+  else if(a==="printConsent") printContract(consentDocData(member(id)));
+  else if(a==="printInstrContract"){ const i=instr(id); if(i) printContract(instrDocData(i)); }
   else if(a==="newExpense") expenseDlg();
   else if(a==="editExpense") expenseDlg(S.expenses.find(x=>x.id===id));
   else if(a==="newPlan") planDlg();
