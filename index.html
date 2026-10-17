@@ -861,9 +861,10 @@ function contractPages(d){
 }
 
 /* ---------- instructor agreement + parent consent (printable) ---------- */
-const docPages = d => d.docKind==="instr" ? instrPages(d) : d.docKind==="consent" ? consentPages(d) : contractPages(d);
-const docTitle = d => d.docKind==="instr" ? "Footwork PH Instructor Agreement" : d.docKind==="consent" ? "Footwork PH Parent Consent Form" : "Footwork PH Membership Agreement";
+const docPages = d => d.docKind==="instr" ? instrPages(d) : d.docKind==="consent" ? consentPages(d) : d.docKind==="waiver" ? waiverPages(d) : contractPages(d);
+const docTitle = d => d.docKind==="instr" ? "Footwork PH Instructor Agreement" : d.docKind==="consent" ? "Footwork PH Parent Consent Form" : d.docKind==="waiver" ? "Footwork PH Walk-in Waiver" : "Footwork PH Membership Agreement";
 const docFileName = d => d.docKind==="instr" ? `Footwork-PH-Instructor-Agreement-${(d.name||"").trim()}`.replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf"
+  : d.docKind==="waiver" ? `Footwork-PH-Waiver-${(d.name||"").trim()}`.replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf"
   : d.docKind==="consent" ? `Footwork-PH-Parent-Consent-${(d.name||"").trim()}`.replace(/[^\w.-]+/g,"-").replace(/-+/g,"-").replace(/-$/,"") + ".pdf"
   : contractFileName(d);
 const KIDTEEN_RX = /kid|teen|k-?pop|junior|youth/i;
@@ -1037,6 +1038,64 @@ function consentPages(d){
     <div class="fwc-ft" style="margin-top:4mm">${esc(FWC_FOOT)}</div></section>`;
   return p1 + p2;
 }
+/* ---------- non-member waiver + health declaration (printable, 1 page) ---------- */
+function waiverDocData(m){ return Object.assign({}, m, {docKind:"waiver"}); }
+function waiverPages(d){
+  const v = x => x ? esc(x) : "";
+  const age = ageOn(d.birthday);
+  const types = ((S&&S.settings&&S.settings.classTypes)||[]).map(t=>t.name).filter(Boolean);
+  const picked = d.interests||[];
+  const classTicks = ((S&&S.settings&&S.settings.classTypes)||[]).map(t=>`${picked.includes(t.id)?"☑":"☐"} ${esc(t.name)}`).join("&nbsp;&nbsp;&nbsp; ") || "☐ Aero Step&nbsp;&nbsp;&nbsp; ☐ Zumba&nbsp;&nbsp;&nbsp; ☐ Hip Hop";
+  let n=0, k=0;
+  const terms = [
+    fwdSec(++n,"HEALTH DECLARATION",k++,[],[
+      "I am healthy and fit to join dance and fitness classes.",
+      "I ticked all my health conditions above. I will tell the instructor about any injury, illness, or pregnancy before class.",
+      "If I have a heart condition, high blood pressure, or I am pregnant, I will get my doctor's okay before joining."]),
+    fwdSec(++n,"SAFETY DURING CLASS",k++,[],[
+      "I will <b>stop right away</b> and tell the instructor if I feel dizzy, short of breath, chest pain, or any pain.",
+      "I will follow the instructor and go at my own pace. I will not force moves beyond my level.",
+      "I will bring water and eat a light meal 1 to 2 hours before class.",
+      "<b>Aero Step classes:</b> The Studio lends step boards for free. Before class starts, I will choose my step board and check that it is stable, not cracked, loose, or slippery. I will tell the instructor right away if it has a problem and will not use a damaged board."]),
+    fwdSec(++n,"ASSUMPTION OF RISK AND RELEASE OF LIABILITY",k++,[],[
+      "I understand that dance and fitness classes carry a risk of accident and injury.",
+      "I join all classes voluntarily and at my own risk.",
+      "To the extent allowed by law, Footwork PH, its owners, instructors, and staff are not liable for any accident, injury, or illness inside the studio, except those caused by the Studio's gross negligence.",
+      "I am responsible for my own medical expenses."]),
+    fwdSec(++n,"EMERGENCIES",k++,[],[
+      "If I get hurt or feel unwell, I allow the Studio to give first aid and call my emergency contact.",
+      "If it is serious, I allow the Studio to call for help or bring me to the nearest hospital or clinic."]),
+    fwdSec(++n,"PERSONAL BELONGINGS",k++,["The Studio is not liable for lost, stolen, or damaged items. I will not bring valuables, and I will keep my things in the area the Studio provides."]),
+    fwdSec(++n,"STUDIO RULES",k++,[],[
+      "Classes are by appointment only. I will book ahead and pay before class.",
+      "Payments are non-refundable. No-shows are not refunded or moved to another day.",
+      "I will wear rubber shoes. No slippers or bare feet on the step boards.",
+      "I will arrive at least 10 minutes early, respect other students, and take care of the studio equipment.",
+      "<b>Late arrivals:</b> If I arrive after class starts, the instructor will not repeat the warm-up or the parts I missed. I will warm up on my own and join the class where it is. The class still ends on time, and the full fee applies."]),
+    fwdSec(++n,"PHOTO AND VIDEO CONSENT",k++,["Footwork PH may record short group videos and photos during class, about 3 to 5 minutes only. My face may be seen while dancing. I allow Footwork PH to post these on Facebook, TikTok, Instagram, and ads for marketing."]),
+    fwdSec(++n,"DATA PRIVACY AND VALIDITY",k++,["My details are used only for classes, safety, and emergencies, in line with the Data Privacy Act of 2012.",
+      "This waiver covers every class I join at Footwork PH from the date I sign it. I will sign a new one if the Studio updates its rules."])];
+  const conds = ["None","Heart condition","High blood pressure","Asthma","Diabetes","Pregnant","Recent injury or surgery"].map(c=>`☐ ${c}`).join("&nbsp;&nbsp;&nbsp; ") + `&nbsp;&nbsp;&nbsp; <span style="white-space:nowrap">☐ Other: ______</span>`;
+  return `<section class="fwc-page">${fwdHead("WAIVER AND HEALTH DECLARATION","NON-MEMBERS · SIGN BEFORE FIRST CLASS")}
+    <p class="fwd-intro">For non-members 18 years old and above. Students below 18 need the Parent / Guardian Consent Form instead.</p>
+    <table class="fwc-det"><tbody>
+      <tr>${fwdCell("Full name", v(d.name), 2)}${fwdCell("Birthday / age", [fmtDate(d.birthday), age!==null?String(age):""].filter(Boolean).join(" · "))}</tr>
+      <tr>${fwdCell("Mobile no.", v(d.contact))}${fwdCell("Email", v(d.email), 2)}</tr>
+      <tr>${fwdCell("Emergency contact person", v(d.ecName), 2)}${fwdCell("Emergency contact no.", v(d.ecNo))}</tr>
+    </tbody></table>
+    <div class="fwc-lab" style="margin-top:2mm">Class / classes joining</div>
+    <div class="fwd-ticks">${classTicks}</div>
+    <div class="fwc-lab">Health conditions (tick all that apply)</div>
+    <div class="fwd-ticks">${conds}</div>
+    <div class="fwd-terms" style="margin-top:1.6mm">${terms.join("")}</div>
+    <div class="fwc-ack"><b>${++n}.&nbsp; AGREEMENT</b><br>I have read and understood this waiver. The information I gave is true. I sign it freely before joining my first class.</div>
+    <div class="fwd-sig3">
+      <div><div class="ln">${v(d.name)}</div><div class="fwc-lab">Signature over printed name</div></div>
+      <div><div class="ln"></div><div class="fwc-lab">Date signed</div></div>
+      <div><div class="ln">FOOTWORK PH MANAGEMENT</div><div class="fwc-lab">Received by / date</div></div>
+    </div>
+    <div class="fwc-ft" style="margin-top:3mm">${esc(FWC_FOOT)}</div></section>`;
+}
 function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)){ res(); return; }
   const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load")); document.head.appendChild(s); }); }
 async function contractReady(box){
@@ -1078,7 +1137,7 @@ function printContract(d){
   const iab=inAppBrowser();
   const fname=docFileName(d);
   ov.innerHTML=`<div class="fwc-tb">
-      <div class="row"><h3>${esc(d.docKind==="instr"?"Instructor agreement":d.docKind==="consent"?"Parent consent":"Contract")} · ${esc(d.name||"Member")}</h3><button type="button" class="btn sm ghost" data-v="close">✕ Close</button></div>
+      <div class="row"><h3>${esc(d.docKind==="instr"?"Instructor agreement":d.docKind==="consent"?"Parent consent":d.docKind==="waiver"?"Waiver":"Contract")} · ${esc(d.name||"Member")}</h3><button type="button" class="btn sm ghost" data-v="close">✕ Close</button></div>
       ${iab?`<div class="fwc-warn"><b>You're in the Messenger (in-app) browser.</b> It blocks printing and downloads. Tap <b>•••</b> at the top right, then <b>Open in Safari</b> (or your browser). Then print from there.<div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-v="copy">Copy app link</button></div></div>`:""}
       <div class="row">
         <button type="button" class="btn sm" data-v="print">🖨 Print</button>
@@ -1539,7 +1598,7 @@ function vMembers(){
     ${!isMem&&m.email?`<div class="small muted" style="overflow-wrap:anywhere">${esc(m.email)}</div>`:""}
     ${!isMem&&m.lapsedOn?`<div class="small muted">${esc(m.memberNo||"Member")} · expired ${fmtDate(m.validUntil)}</div>`:""}
     ${!isMem&&interestNames(m).length?`<div class="small muted">Interested in: ${esc(interestNames(m).join(", "))}</div>`:""}</div>
-    <div class="row"><span class="pill ${st.cls}">${st.status}</span>${isMem?`<button class="btn sm ghost" data-act="printContract" data-id="${m.id}" title="Print contract" aria-label="Print contract for ${esc(m.name)}">🖨</button><button class="btn sm ghost" data-act="printCard" data-id="${m.id}" title="Print ID card" aria-label="Print ID card for ${esc(m.name)}">🪪</button>`:""}${isMinor(m)?`<button class="btn sm ghost" data-act="printConsent" data-id="${m.id}" title="Print parent consent" aria-label="Print parent consent for ${esc(m.name)}">👪</button>`:""}<button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
+    <div class="row"><span class="pill ${st.cls}">${st.status}</span>${isMem?`<button class="btn sm ghost" data-act="printContract" data-id="${m.id}" title="Print contract" aria-label="Print contract for ${esc(m.name)}">🖨</button><button class="btn sm ghost" data-act="printCard" data-id="${m.id}" title="Print ID card" aria-label="Print ID card for ${esc(m.name)}">🪪</button>`:""}${!isMem&&!isMinor(m)?`<button class="btn sm ghost" data-act="printWaiver" data-id="${m.id}" title="Print waiver" aria-label="Print waiver for ${esc(m.name)}">📝</button>`:""}${isMinor(m)?`<button class="btn sm ghost" data-act="printConsent" data-id="${m.id}" title="Print parent consent" aria-label="Print parent consent for ${esc(m.name)}">👪</button>`:""}<button class="btn sm ghost" data-act="editPerson" data-id="${m.id}">Edit</button></div></div></li>`;}).join("")}</ul>`
     :`<p class="empty">${isMem?"No members yet. Add your first member.":"No non-members yet. Walk-ins you add in a class show up here."}</p>`}</div>`;
 }
 
@@ -1779,6 +1838,8 @@ function personDlg(m, type){
     <p class="small muted">Non-members pay ${peso(rate("nonMember"))} per session. No membership fee.</p>
     <label class="f">Notes<textarea id="m_notes" rows="2">${esc(m.notes||"")}</textarea></label>
     ${isNew?"":attHistory(m)}
+    <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Waiver and health declaration</b><div class="small muted">For non-members 18 and above. Sign once before the first class. Auto-filled, 1 page, A4.</div></div>
+      <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_wprint">📝 Print waiver</button><button type="button" class="btn sm ghost" id="m_wpdf">Download PDF</button></div></div></div>
     <div class="cbox"><div class="row between"><div style="min-width:0"><b class="small">Parent consent form (kids &amp; teens)</b><div class="small muted">For students below 18. Auto-filled with this student's details. 2 pages, A4.</div></div>
       <div class="row" style="gap:6px"><button type="button" class="btn sm" id="m_kprint">👪 Print consent</button><button type="button" class="btn sm ghost" id="m_kpdf">Download PDF</button></div></div></div>
     <div class="joinbox">
@@ -1842,7 +1903,10 @@ function personDlg(m, type){
       ecName:val("m_ecName"), ecNo:val("m_ecNo"), memberNo: mem?val("m_no"):m.memberNo,
       interests: mem ? (m.interests||[]) : [...document.querySelectorAll('input[name="m_interest"]:checked')].map(x=>x.value)}));
     document.getElementById("m_kprint").onclick = ()=>printContract(kData());
-    document.getElementById("m_kpdf").onclick = e=>downloadContract(kData(), e.currentTarget); }
+    document.getElementById("m_kpdf").onclick = e=>downloadContract(kData(), e.currentTarget);
+    if(!mem){ const wData = ()=>waiverDocData(Object.assign({}, kData(), {docKind:"waiver"}));
+      document.getElementById("m_wprint").onclick = ()=>printContract(wData());
+      document.getElementById("m_wpdf").onclick = e=>downloadContract(wData(), e.currentTarget); } }
   if(mem){
     const cData = ()=>Object.assign({}, m, {name:val("m_name"), memberNo:val("m_no"), contact:val("m_contact"), email:val("m_email"), birthday:val("m_bday"),
       ecName:val("m_ecName"), ecNo:val("m_ecNo"), memType:val("m_mtype"), validFrom:val("m_vFrom"), validUntil:val("m_vUntil"), feePaid:val("m_fee"), receivedBy:val("m_recBy")});
@@ -2321,6 +2385,7 @@ function handleAct(b){
   else if(a==="printContract") printContract(member(id));
   else if(a==="printCard") printCards([member(id)]);
   else if(a==="printConsent") printContract(consentDocData(member(id)));
+  else if(a==="printWaiver") printContract(waiverDocData(member(id)));
   else if(a==="printInstrContract"){ const i=instr(id); if(i) printContract(instrDocData(i)); }
   else if(a==="newExpense") expenseDlg();
   else if(a==="editExpense") expenseDlg(S.expenses.find(x=>x.id===id));
